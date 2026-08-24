@@ -8,6 +8,9 @@ export type CreateAppointmentInput = {
   reason?: string;
   source: "online" | "walk_in";
   handledBy?: string; // receptionist profile id, required for walk_in
+  status?: "PENDING" | "CONFIRMED"; // default 'PENDING'
+  paymentMethod?: "cash" | "gcash";
+  paymentReference?: string;
 };
 
 export type CreateAppointmentResult =
@@ -25,6 +28,9 @@ const inputSchema = z.object({
   reason: z.string().optional(),
   source: z.enum(["online", "walk_in"]),
   handledBy: z.string().uuid().optional(),
+  status: z.enum(["PENDING", "CONFIRMED"]).optional(),
+  paymentMethod: z.enum(["cash", "gcash"]).optional(),
+  paymentReference: z.string().optional(),
 });
 
 // Creates an appointment through the CALLER'S OWN RLS-bound client — never
@@ -74,8 +80,10 @@ export async function createAppointment(
       appointment_time: input.appointmentTime,
       reason: input.reason ?? null,
       source: input.source,
-      status: "PENDING",
+      status: input.status ?? "PENDING",
       handled_by: input.handledBy ?? null,
+      payment_method: input.paymentMethod ?? null,
+      payment_reference: input.paymentReference ?? null,
     })
     .select("id")
     .single();

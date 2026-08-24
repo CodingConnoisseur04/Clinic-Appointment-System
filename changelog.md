@@ -299,3 +299,83 @@ start `npm run dev` → `npx tsx scripts/test-phase3.ts`.
 ---
 
 ## Phase 4 — Receptionist flow
+**Date closed:** 2026-08-24
+**Spec:** /specs/phase-4-receptionist-flow.md
+
+### What was built
+- Shared auth UI (reused by Phases 5/6): `src/app/login/page.tsx`
+  (email/password, inline generic error, post-login redirect by role from
+  `profiles.role`), `src/lib/auth/require-role.ts` (no session → `/login`,
+  wrong role → their own role home, returns profile),
+  `src/app/receptionist/layout.tsx` wrapping all `/receptionist` routes.
+- `create-appointment.ts` extended additively with optional
+  `status` / `paymentMethod` / `paymentReference`; defaults preserve Phase
+  3 behavior exactly (verified by Test 6 = Phase 3 suite unmodified).
+- New `src/lib/booking/update-appointment.ts`: `confirmAppointment`,
+  `rejectAppointment`, `markAttendance` — caller's RLS-bound client only,
+  no in-function role checks per spec §2.2. Each update scopes to its
+  intended starting status (confirm → PENDING, attendance → CONFIRMED) and
+  reports typed failure when zero rows match.
+- Receptionist dashboard `src/app/receptionist/page.tsx`: one page, three
+  tabs (Pending Requests / Walk-in Registration / Appointments). Reads and
+  writes go through the receptionist's browser client (RLS-bound); slot
+  lookup + patient reconciliation reuse Phase 3's service-role API routes
+  as-is. Confirm dialog carries the "no SMS sent" note required by spec §5.
+  shadcn tabs/dialog/textarea/sonner added; Toaster wired into root layout.
+- `scripts/test-phase4.ts` — imports the REAL src/lib modules.
+
+### Deviations from spec
+1. **Phase 3's harness-mirror gap is closed** (spec §6 hoped for this):
+   probing showed current tsx resolves the `@/*` alias natively — Phase 3's
+   assumption was simply outdated. `test-phase4.ts` imports
+   `create-appointment.ts` / `update-appointment.ts` directly; no new
+   mirrors were added. (Phase 3's own harness left untouched, as scoped.)
+2. **Status-precondition scoping added to update functions** (flagged in
+   plan mode): confirm only matches PENDING rows, attendance only
+   CONFIRMED rows. Beyond the spec's literal text but prevents confirming
+   a CANCELLED row; RLS remains the authority either way.
+3. **Walk-in form prefills via a direct staff-scoped query** on `patients`
+   (allowed by `patients_select_staff`) rather than extending the
+   find-or-create route's response shape — the route stays exactly as Phase
+   3 shipped it and remains the authoritative reconciliation step on submit.
+4. **Harness requires a fresh `db reset` before reruns** — fixed test
+   slots collide with rows from a prior run otherwise (same implicit
+   contract as the Phase 3 harness).
+
+### Files touched
+- `src/app/login/page.tsx`, `src/app/receptionist/layout.tsx`,
+  `src/app/receptionist/page.tsx`, `src/app/layout.tsx` (Toaster)
+- `src/lib/auth/require-role.ts`,
+  `src/lib/booking/create-appointment.ts` (extended),
+  `src/lib/booking/update-appointment.ts`
+- `src/components/ui/{tabs,dialog,textarea,sonner}.tsx` (shadcn)
+- `package.json` (+ sonner dep via shadcn)
+- `scripts/test-phase4.ts`
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §4)
+| # | Test | Result |
+|---|------|--------|
+| 1 | confirmAppointment sets CONFIRMED + both payment fields | PASS |
+| 2 | rejectAppointment sets CANCELLED | PASS |
+| 3 | markAttendance ATTENDED / NO_SHOW | PASS |
+| 4 | One-call CONFIRMED creation with payment fields | PASS |
+| 5 | Patient session denied on all three updates (RLS) | PASS (NOT_FOUND_OR_DENIED ×3) |
+| 6 | Phase 3 suite passes unmodified | PASS (12/12) |
+
+Manual browser tests 7–11 remain for the human (login redirect, walk-in
+flow through the real form, pending-tab end-to-end, appointments tab).
+
+Smoke-checked during build: anonymous GET `/receptionist` redirects to the
+login page; `/login` renders. Lint + tsc clean.
+
+Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
+`npx tsx scripts/test-phase4.ts` (fresh reset required — see deviation #4).
+
+### Known issues / follow-ups
+- Phase 3's harness still uses mirrors; could now be trivially rewired to
+  import real modules since tsx resolves aliases (left as-is per scope).
+- No live updates on the dashboard — refresh after actions is explicit;
+  fine per spec §3.3's "reflect immediately (or after a refresh)".
+- Patient home (`/patient`) doesn't exist yet — a logged-in patient
+  visiting `/receptionist` redirects there and will 404 until Phase 5.
