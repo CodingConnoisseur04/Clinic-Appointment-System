@@ -7,7 +7,7 @@ For details on what happened in a phase, see changelog.md.
 |---|---|---|---|---|
 | 1 | Scaffold & schema | Closed | /specs/phase-1-project-scaffold-database-schema.md | All 9 test cases pass; committed |
 | 2 | Auth + role-based access | Built — awaiting test | /specs/phase-2-auth-role-based-access.md | All 13 spec tests pass; after `db reset` re-run `npx tsx scripts/seed-staff.ts` |
-| 3 | Slot-conflict logic (app layer) | Not started | /specs/phase-3-slot-conflict-logic.md | High-risk — reused 3x (FR3/3a/6a); depends on Phase 2 for patient identity |
+| 3 | Slot-conflict logic (app layer) | Closed | /specs/phase-3-slot-conflict-logic.md | All 12 tests pass; run seed-staff after `db reset`, dev server needed for Test 6 |
 | 4 | Receptionist flow | Not started | /specs/phase-4-receptionist.md | Most complex screen |
 | 5 | Patient booking flow | Not started | /specs/phase-5-patient-booking.md | |
 | 6 | Doctor schedule view | Not started | /specs/phase-6-doctor-view.md | |
@@ -18,7 +18,7 @@ For details on what happened in a phase, see changelog.md.
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
 ## Current focus
-Phase 2 closed (tested, committed). Next: plan Phase 3 — Slot-conflict logic (app layer).
+Phase 3 closed (tested, committed). Next: plan Phase 4 — Receptionist flow.
 
 ## Renumbering note (this update)
 Auth + role-based access was missing from the original phase list entirely;

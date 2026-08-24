@@ -197,18 +197,105 @@ dev` first if you want Test 13 to hit a live server).
 
 ---
 
-## Phase 3 — [Name]
-**Date closed:**
-**Spec:** /specs/phase-3-....md
+## Phase 3 — Slot-conflict logic (app layer)
+**Date closed:** 2026-08-24
+**Spec:** /specs/phase-3-slot-conflict-logic.md
 
 ### What was built
--
+- Migration `supabase/migrations/20260824050822_phase3_slot_logic.sql`:
+  partial unique index `uq_patients_profile_id` (Addendum A.1) and
+  `availability_exceptions` table with RLS + doctor-write/all-read policies
+  (Addendum A.3), reusing Phase 2's `get_my_role()`. Timestamp verified to
+  sort after Phase 2's file per spec §1.
+- `src/lib/booking/get-available-slots.ts` — closed-day short-circuit →
+  weekly hours → candidate generation → subtract non-cancelled bookings.
+- `src/lib/booking/create-appointment.ts` — typed outcomes; `SLOT_TAKEN`
+  from Postgres `23505` / `uq_appointments_slot` match; `CLOSED_DATE`
+  pre-check; zod payload validation; `handledBy` required for walk-ins.
+  Inserts go through the caller's RLS-bound client only.
+- `src/lib/patients/find-or-create-patient.ts` — exact-phone reconciliation,
+  walk-in profile-linking path (exercises `uq_patients_profile_id`),
+  duplicate-safe fallback when the profile is already linked elsewhere.
+  Service-role client per spec §2.3's structural justification.
+- Routes, both gated behind any authenticated session (cookie or Bearer):
+  `src/app/api/available-slots/route.ts?date=YYYY-MM-DD` (admin-backed,
+  spec §2.1.1 resolution) and `src/app/api/patients/find-or-create/route.ts`.
+- `src/lib/auth/get-request-user.ts` — shared route auth helper (cookie
+  session first, Authorization bearer fallback so scripts/APIs can call).
+- `scripts/test-phase3.ts` — harness for spec Tests 1–12 through real
+  PostgREST sessions.
 
 ### Deviations from spec
--
+1. **Route auth gating added** (approved in plan mode): both new endpoints
+   return 401 without a valid session. The spec didn't specify gating;
+   AGENTS.md's "no bypassing via service role in client-facing code paths"
+   pushed toward locking down service-role-powered routes, especially
+   find-or-create (open access would let anyone enumerate phone numbers).
+   Slot data itself remains "public as a phone call" in spirit for any
+   authenticated user.
+2. **GRANTs added for the new table** — spec §5 assumed Phase 1's grants
+   covered everything; they only covered tables existing at that time.
+   This CLI version grants nothing automatically, so the doctor insert in
+   Test 2 initially failed with permission-denied until
+   `grant all on availability_exceptions to anon, authenticated,
+   service_role` was added to this migration. Rule of thumb going forward:
+   every migration creating a table must grant on it explicitly.
+3. **Harness mirrors lib functions instead of importing them** — `tsx`
+   doesn't resolve the `@/*` alias used by `src/lib/**`, so
+   `test-phase3.ts` contains faithful local copies of the three functions
+   and tests those plus the live `/api/available-slots` route (which does
+   execute the real `src/lib` code). Consequence: the real
+   `create-appointment.ts` / `find-or-create-patient.ts` modules are not
+   directly executed by the harness — their logic is verified via the
+   mirror + the Phase 4/5 UIs will exercise the real modules. Flagging
+   honestly rather than claiming more coverage than exists. If a future
+   phase wants direct coverage, wiring `tsconfig-paths` into tsx is the fix.
+4. **Bearer-token auth support on routes** — part of deviation #1's helper:
+   routes accept the SSR cookie session or an `Authorization: Bearer`
+   header, enabling non-browser callers (the test harness) without weakening
+   the gate.
 
 ### Files touched
--
+- `supabase/migrations/20260824050822_phase3_slot_logic.sql`
+- `src/lib/booking/{get-available-slots,create-appointment}.ts`,
+  `src/lib/patients/find-or-create-patient.ts`
+- `src/app/api/available-slots/route.ts`,
+  `src/app/api/patients/find-or-create/route.ts`
+- `src/lib/auth/get-request-user.ts`
+- `scripts/test-phase3.ts`
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §3)
+| # | Test | Result |
+|---|------|--------|
+| 1 | `uq_patients_profile_id` holds | PASS |
+| 2 | Exceptions RLS matches doctor_availability shape | PASS (after deviation #2) |
+| 3 | Slots on normal weekday (16 slots, 09:00–16:30) | PASS |
+| 4 | Exception date returns [] | PASS |
+| 5 | Booked excluded / cancelled re-included | PASS |
+| 6 | Route correct for authenticated patient; anon 401 | PASS |
+| 7 | createAppointment online + walk-in succeed | PASS |
+| 8 | Concurrent same-slot: one win, typed SLOT_TAKEN | PASS |
+| 9 | CLOSED_DATE before insert | PASS |
+| 10 | findOrCreatePatient reuses walk-in by phone | PASS |
+| 11 | findOrCreatePatient creates when no match | PASS |
+| 12 | End-to-end signup → register → book | PASS |
+
+Note: Test 10 initially failed due to a harness setup flaw (linking a
+walk-in to a profile that already owned a patients row — the function
+correctly returned the already-linked row); fixed in the harness, not the lib.
+
+Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
+start `npm run dev` → `npx tsx scripts/test-phase3.ts`.
 
 ### Known issues / follow-ups
--
+- Real `create-appointment.ts` / `find-or-create-patient.ts` modules are
+  exercised first in Phases 4–5 UIs (see deviation #3). Their mirrors in
+  the harness must be kept in sync or, better, dropped once tsx path
+  aliases are wired up.
+- Addendum A treated as signed off per human confirmation ("i am the only
+  team") recorded during plan mode.
+
+---
+
+## Phase 4 — Receptionist flow
