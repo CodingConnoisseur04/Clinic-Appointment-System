@@ -111,9 +111,95 @@ start time, which can produce a false failure.
 
 ---
 
-## Phase 2 — [Name]
+## Phase 2 — Auth + role-based access
+**Date closed:** 2026-08-24
+**Spec:** /specs/phase-2-auth-role-based-access.md
+
+### What was built
+- Migration `supabase/migrations/20260823180000_phase2_auth_rls.sql` (one
+  file, per spec): `get_my_role()` security-definer helper,
+  `handle_new_user()` + `on_auth_user_created` trigger on `auth.users`
+  (role from `raw_app_meta_data`, defaulting `'patient'`),
+  `prevent_role_change()` anti-escalation trigger on `profiles`, and all
+  RLS policies per spec §2.4 — profiles (own/staff select, own update),
+  patients (own/staff select/insert/update, no delete),
+  doctor_availability (all-read, doctor-write), appointments (patient
+  own-insert constrained to `source='online' AND status='PENDING'`,
+  receptionist full read/write, doctor reads `CONFIRMED` only),
+  sms_logs (receptionist-select only). No new tables or grants.
+- App layer: `src/lib/supabase/middleware.ts` (`updateSession`) +
+  `src/middleware.ts` (asset-excluding matcher);
+  `src/lib/auth/get-profile.ts` (`getCurrentProfile()`, server-side).
+- Tooling: `tsx` devDependency; `scripts/seed-staff.ts` (idempotent local
+  staff seeding via service-role admin API); `scripts/test-phase2.ts`
+  automated harness for spec Tests 1–13 through real PostgREST paths.
+
+### Deviations from spec
+1. **Staff role assignment needed a post-create step** (the significant
+   one). Spec §3.3 assumed `handle_new_user()` would pick up
+   `app_metadata.role` from `auth.admin.createUser()`. On this local stack
+   it does not: GoTrue writes `raw_app_meta_data` *after* the initial
+   `auth.users` INSERT (verified empirically — direct SQL insert with the
+   role present at INSERT time produces the correct profile role, while
+   admin-API-created users always got `'patient'`). Fix:
+   `seed-staff.ts` now explicitly updates `profiles.role` via the
+   service-role client immediately after creating each staff user.
+   Security model unchanged: roles are still only settable through the
+   service-role path; public signups still cannot influence role (Tests 1,
+   2, 12 pass). The migration's trigger logic is untouched and remains
+   correct for any environment where metadata IS present at insert time.
+2. **Migration filename timestamp** — `supabase migration new` stamped UTC
+   (`101911`), which sorts before Phase 1's locally-generated `173553` and
+   would have run first. Renamed to `20260823180000_phase2_auth_rls.sql`.
+   Worth knowing for future migrations: use one consistent clock when
+   naming files manually.
+3. **Test harness committed** (`scripts/test-phase2.ts`) — approved in plan
+   mode so the human can rerun all 13 checks after `db reset` + reseed.
+
+### Files touched
+- `supabase/migrations/20260823180000_phase2_auth_rls.sql`
+- `src/middleware.ts`, `src/lib/supabase/middleware.ts`,
+  `src/lib/auth/get-profile.ts`
+- `scripts/seed-staff.ts`, `scripts/test-phase2.ts`
+- `package.json` (+tsx devDep)
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §4)
+| # | Test | Result |
+|---|------|--------|
+| 1 | Public signup defaults to patient | PASS |
+| 2 | Signup cannot self-elevate via user_metadata | PASS |
+| 3 | Seeded staff get correct roles | PASS (after deviation #1 fix) |
+| 4 | Patient can't read another patient | PASS |
+| 5 | Patient inserts own patient + appointment rows | PASS |
+| 6 | Patient insert rejected outside constraints | PASS |
+| 7 | Patient cannot update/cancel own appointment | PASS |
+| 8 | Receptionist full read/write incl. walk-ins | PASS |
+| 9 | Doctor sees only CONFIRMED; no writes | PASS |
+| 10 | Availability: doctor yes, receptionist no | PASS |
+| 11 | sms_logs receptionist-only | PASS |
+| 12 | Direct role escalation blocked by trigger | PASS |
+| 13 | Middleware OK for signed-out visitor | PASS (HTTP 200) |
+
+Run order for humans: `npx supabase db reset` → `npx tsx
+scripts/seed-staff.ts` → `npx tsx scripts/test-phase2.ts` (start `npm run
+dev` first if you want Test 13 to hit a live server).
+
+### Known issues / follow-ups
+- **Important workflow note:** `db reset` wipes auth users; staff accounts
+  must be re-seeded with `npx tsx scripts/seed-staff.ts` afterwards.
+- If hosted Supabase is introduced later, re-verify deviation #1 there —
+  hosted GoTrue may write app_metadata at insert time (standard documented
+  behavior), in which case the seed script's explicit update is harmless
+  but redundant.
+- progress.md rows 3–7 still carry stale phase names/ordering vs this
+  spec's feed-order; left untouched per plan-mode agreement.
+
+---
+
+## Phase 3 — [Name]
 **Date closed:**
-**Spec:** /specs/phase-2-....md
+**Spec:** /specs/phase-3-....md
 
 ### What was built
 -

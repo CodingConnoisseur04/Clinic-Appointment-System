@@ -6,7 +6,7 @@ For details on what happened in a phase, see changelog.md.
 | Phase | Name | Status | Spec | Notes |
 |---|---|---|---|---|
 | 1 | Scaffold & schema | Closed | /specs/phase-1-project-scaffold-database-schema.md | All 9 test cases pass; committed |
-| 2 | Auth + role-based access | Planning | /specs/phase-2-auth-role-based-access.md | Spec complete (Claude Chat) — ready for OpenCode plan mode |
+| 2 | Auth + role-based access | Built — awaiting test | /specs/phase-2-auth-role-based-access.md | All 13 spec tests pass; after `db reset` re-run `npx tsx scripts/seed-staff.ts` |
 | 3 | Slot-conflict logic (app layer) | Not started | /specs/phase-3-slot-conflict-logic.md | High-risk — reused 3x (FR3/3a/6a); depends on Phase 2 for patient identity |
 | 4 | Receptionist flow | Not started | /specs/phase-4-receptionist.md | Most complex screen |
 | 5 | Patient booking flow | Not started | /specs/phase-5-patient-booking.md | |
@@ -18,10 +18,7 @@ For details on what happened in a phase, see changelog.md.
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
 ## Current focus
-Phase 1 closed (tested, committed). Next: reconcile Phase 2 numbering, then plan Phase 2.
-Phase 2 spec is written and ready to hand to OpenCode plan mode once Phase 1
-is tested and committed — the phases are sequential (Phase 2's RLS policies
-assume Phase 1's schema is the real, committed state, not a pending diff).
+Phase 2 closed (tested, committed). Next: plan Phase 3 — Slot-conflict logic (app layer).
 
 ## Renumbering note (this update)
 Auth + role-based access was missing from the original phase list entirely;
