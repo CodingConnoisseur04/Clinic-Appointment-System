@@ -1,3 +1,4 @@
+See docs/master-handoff-addendum-a.md for post-Phase-2 corrections to Sections 3–9.
 # Master Handoff — Clinic Appointment System
 
 > **Purpose of this document:** This is the complete design context for a Clinic Appointment System, produced during a System Integration and Architecture course project. It is meant to be pasted into a **new chat** to continue the work — specifically, moving from design into actual implementation ("vibe coding" the real system). Everything below is the accumulated, final, decided state of the design — not a draft. No hypothetical/fictional clinic scenario is used; this describes the actual system to be built.
