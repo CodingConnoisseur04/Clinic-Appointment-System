@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import type { DateRange } from "react-day-picker";
 import { createClient } from "@/lib/supabase/client";
 import {
   createAppointment,
@@ -12,6 +13,19 @@ import {
   rejectAppointment,
   markAttendance,
 } from "@/lib/booking/update-appointment";
+import {
+  getNoShowReport,
+  type NoShowReport,
+} from "@/lib/reports/get-no-show-report";
+import {
+  getSmsReport,
+  type SmsReport,
+} from "@/lib/reports/get-sms-report";
+import {
+  getAppointmentSummary,
+  type AppointmentSummary,
+} from "@/lib/reports/get-appointment-summary";
+import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,6 +115,17 @@ export default function ReceptionistPage() {
   const [wiReference, setWiReference] = useState("");
   const [wiSubmitting, setWiSubmitting] = useState(false);
 
+  // Reports tab
+  const [reportRange, setReportRange] = useState<DateRange | undefined>(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - 29);
+    return { from, to };
+  });
+  const [noShow, setNoShow] = useState<NoShowReport>();
+  const [smsReport, setSmsReport] = useState<SmsReport>();
+  const [summary, setSummary] = useState<AppointmentSummary>();
+
   const fetchAppointments = useCallback(async () => {
     const { data } = await supabase
       .from("appointments")
@@ -130,6 +155,36 @@ export default function ReceptionistPage() {
       cancelled = true;
     };
   }, [supabase, fetchAppointments]);
+
+  const reportRangeStr = useMemo(() => {
+    if (!reportRange?.from || !reportRange?.to) return null;
+    return {
+      from: toDateInput(reportRange.from),
+      to: toDateInput(reportRange.to),
+    };
+  }, [reportRange]);
+
+  useEffect(() => {
+    if (!reportRangeStr) return;
+    let cancelled = false;
+    // Deferred one tick: no setState synchronously in the effect body.
+    const timer = setTimeout(async () => {
+      const [ns, sr, sum] = await Promise.all([
+        getNoShowReport(supabase, reportRangeStr),
+        getSmsReport(supabase, reportRangeStr),
+        getAppointmentSummary(supabase, reportRangeStr),
+      ]);
+      if (!cancelled) {
+        setNoShow(ns);
+        setSmsReport(sr);
+        setSummary(sum);
+      }
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [supabase, reportRangeStr]);
 
   async function act(fn: () => Promise<{ success: boolean; message?: string }>, okMsg: string) {
     const result = await fn();
@@ -264,6 +319,7 @@ export default function ReceptionistPage() {
           </TabsTrigger>
           <TabsTrigger value="walkin">Walk-in Registration</TabsTrigger>
           <TabsTrigger value="appointments">Appointments</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
         {/* ---- Tab 1: Pending Requests ---- */}
@@ -600,6 +656,82 @@ export default function ReceptionistPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ---- Tab 4: Reports ---- */}
+        <TabsContent value="reports" className="mt-4">
+          <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+            <Card>
+              <CardHeader>
+                <CardTitle>Date range</CardTitle>
+                <CardDescription>
+                  Defaults to the last 30 days. Reports update on selection.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-center">
+                <Calendar
+                  mode="range"
+                  selected={reportRange}
+                  onSelect={(r) => setReportRange(r ?? undefined)}
+                  numberOfMonths={1}
+                />
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-col gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Appointment summary</CardTitle>
+                  <CardDescription>
+                    Created in range, by status and by source.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <Stat label="Pending" value={summary?.pending} />
+                  <Stat label="Confirmed" value={summary?.confirmed} />
+                  <Stat label="Cancelled" value={summary?.cancelled} />
+                  <Stat label="Online" value={summary?.online} />
+                  <Stat label="Walk-in" value={summary?.walkIn} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>No-show rate</CardTitle>
+                  <CardDescription>
+                    Past confirmed appointments only. Unmarked ones count as
+                    no-shows for this report (never written to the record).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                  <Stat label="Attended" value={noShow?.attended} />
+                  <Stat label="Marked no-show" value={noShow?.noShowMarked} />
+                  <Stat label="Unmarked (inferred)" value={noShow?.noShowInferred} />
+                  <Stat
+                    label="No-show rate"
+                    value={noShow === undefined ? undefined : `${noShow.noShowRatePercent}%`}
+                  />
+                  <Stat label="Total past confirmed" value={noShow?.totalPastConfirmed} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>SMS delivery</CardTitle>
+                  <CardDescription>
+                    Sent in range, by type and outcome. Failures are logged,
+                    never retried automatically.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Stat label="Confirmations sent" value={smsReport?.confirmationSent} />
+                  <Stat label="Confirmations failed" value={smsReport?.confirmationFailed} />
+                  <Stat label="Reminders sent" value={smsReport?.reminderSent} />
+                  <Stat label="Reminders failed" value={smsReport?.reminderFailed} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* ---- Confirm-payment dialog ---- */}
@@ -750,6 +882,15 @@ export default function ReceptionistPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value?: number | string }) {
+  return (
+    <div className="rounded-md border p-3">
+      <div className="text-2xl font-semibold">{value ?? "-"}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }

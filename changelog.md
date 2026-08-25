@@ -640,3 +640,65 @@ start `npm run dev` → `npx tsx scripts/test-phase7.ts`.
   reports on this table.
 - `.env.local` was restored to `SEMAPHORE_DRY_RUN=true` after the human's
   manual real-send test (Test 7).
+
+---
+
+## Phase 8 — Reports
+**Date closed:** 2026-08-25
+**Spec:** /specs/phase-8-reports.md
+
+### What was built
+- `src/lib/reports/get-no-show-report.ts` — past CONFIRMED appointments in
+  range split into attended / noShowMarked / noShowInferred (NULL attendance
+  counted as no-show at query time per Addendum A.5 option (b)) + rate %.
+  Strictly read-only — nothing touches the attendance column.
+- `src/lib/reports/get-sms-report.ts` — sms_logs grouped by type × status.
+- `src/lib/reports/get-appointment-summary.ts` — status and source counts,
+  range applied to `created_at`.
+- Fourth **Reports** tab on the receptionist dashboard: shadcn Calendar in
+  `mode="range"` defaulting to the last 30 days, three plain-number cards
+  (marked-vs-inferred shown distinctly per spec §1.1). No charting library,
+  no exports, no new routes/policies/tables.
+- `scripts/test-phase8.ts` — seeds entirely through real lib functions
+  (`createAppointment`, `markAttendance`, `sendConfirmationSms` with
+  `simulateFailure`), Tests 1–4.
+
+### Deviations from spec
+1. **Test 4's no-show assertion reflects a scope coincidence, stated
+   openly** (flagged in plan mode): the doctor's CONFIRMED-only RLS scope is
+   exactly what the no-show report queries, so a doctor session legitimately
+   produces numbers identical to the receptionist's — asserting
+   "incomplete" there would be false. Harness instead asserts: doctor SMS
+   report all zeros (no policy at all), doctor no-show matches
+   receptionist's, patient totals ≤ receptionist's. The UI exposure gap the
+   spec actually cares about holds regardless — only the receptionist
+   dashboard renders any of this.
+
+### Files touched
+- `src/lib/reports/{get-no-show-report,get-sms-report,get-appointment-summary}.ts`
+- `src/app/receptionist/page.tsx` (fourth tab)
+- `scripts/test-phase8.ts`
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §3)
+| # | Test | Result |
+|---|------|--------|
+| 1 | No-show splits correct; future excluded; rate right | PASS (1/1/1, total=3, rate=67%) |
+| 2 | SMS report counts match seeded mix | PASS |
+| 3 | Appointment summary counts match seeded mix | PASS |
+| 4 | Scope-correctness for doctor/patient sessions | PASS (per deviation #1) |
+
+Regression: Phase 7 suite 8/8 unmodified. Lint + tsc clean.
+
+Manual browser tests 5–7 remain for the human (Reports tab against
+accumulated real data, date-range change updates, role isolation).
+
+Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
+start `npm run dev` → `npx tsx scripts/test-phase8.ts`.
+
+### Known issues / follow-ups
+- Reports read `created_at` for the summary (spec §1.3's "created, not
+  necessarily scheduled") but `sent_at` for SMS and `appointment_date` for
+  no-shows — three different time axes by design; keep in mind when
+  comparing cards across an odd range boundary.
+- All feature phases complete. Phase 9 (deployment) is the last spec.
