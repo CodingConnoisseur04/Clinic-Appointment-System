@@ -62,9 +62,7 @@ async function signUpPatient(
 
 // Real src/lib modules — the exact code the patient UI calls.
 
-type CreateResult =
-  | { success: true; appointmentId: string }
-  | { success: false; reason: string; message: string };
+type CreateResult = Awaited<ReturnType<typeof createAppointment>>;
 
 async function createOnlineRequest(
   supabase: SupabaseClient,
@@ -77,7 +75,7 @@ async function createOnlineRequest(
     appointmentDate: date,
     appointmentTime: time,
     source: "online",
-  }) as CreateResult;
+  });
 }
 
 const MON = "2026-11-02"; // fresh week, clear of other suites

@@ -33,7 +33,7 @@ if (!url || !serviceRoleKey) {
 }
 
 // Local-dev only. Never point this at a non-local project.
-if (!url.includes("127.0.0.1")) {
+if (!url.includes("127.0.0.1") && !url.includes("localhost")) {
   console.error(`Refusing to run against a non-local URL: ${url}`);
   process.exit(1);
 }
