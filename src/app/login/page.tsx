@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,7 +98,10 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
-            Patient self-registration and booking arrive in a later phase.
+            New patient?{" "}
+            <Link href="/signup" className="underline underline-offset-2">
+              Create an account
+            </Link>
           </p>
         </CardContent>
       </Card>

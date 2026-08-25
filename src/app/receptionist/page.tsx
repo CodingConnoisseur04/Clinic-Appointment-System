@@ -21,7 +21,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +48,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 
 type AppointmentRow = {
   id: string;
@@ -62,12 +62,6 @@ type AppointmentRow = {
   payment_reference: string | null;
   patients: { full_name: string; phone: string } | null;
 };
-
-function toDateInput(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
 
 function todayStr(): string {
   return toDateInput(new Date());
@@ -101,9 +95,7 @@ export default function ReceptionistPage() {
   const [wiAddress, setWiAddress] = useState("");
   const [wiExisting, setWiExisting] = useState(false);
   const [wiDate, setWiDate] = useState<Date | undefined>(undefined);
-  const [wiSlots, setWiSlots] = useState<{ time: string }[]>([]);
-  const [wiSlotsLoading, setWiSlotsLoading] = useState(false);
-  const [wiSlot, setWiSlot] = useState<string>("");
+  const [wiSlot, setWiSlot] = useState<string | null>(null);
   const [wiReason, setWiReason] = useState("");
   const [wiMethod, setWiMethod] = useState<"cash" | "gcash">("cash");
   const [wiReference, setWiReference] = useState("");
@@ -168,8 +160,7 @@ export default function ReceptionistPage() {
     setWiAddress("");
     setWiExisting(false);
     setWiDate(undefined);
-    setWiSlots([]);
-    setWiSlot("");
+    setWiSlot(null);
     setWiReason("");
     setWiMethod("cash");
     setWiReference("");
@@ -201,22 +192,9 @@ export default function ReceptionistPage() {
     }
   }
 
-  async function onPickDate(date: Date | undefined) {
+  function onPickDate(date: Date | undefined) {
     setWiDate(date);
-    setWiSlot("");
-    setWiSlots([]);
-    if (!date) return;
-    setWiSlotsLoading(true);
-    try {
-      const res = await fetch(`/api/available-slots?date=${toDateInput(date)}`);
-      const body = await res.json();
-      setWiSlots(res.ok ? (body.slots ?? []) : []);
-      if (!res.ok) toast.error(body.error ?? "Failed to load slots");
-    } catch {
-      toast.error("Failed to reach slot API");
-    } finally {
-      setWiSlotsLoading(false);
-    }
+    setWiSlot(null);
   }
 
   async function submitWalkin() {
@@ -416,38 +394,12 @@ export default function ReceptionistPage() {
                 <CardDescription>Pick a date, then an open slot.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-3">
-                <Calendar
-                  mode="single"
-                  selected={wiDate}
-                  onSelect={onPickDate}
+                <SlotPicker
+                  date={wiDate}
+                  onDateChange={onPickDate}
+                  selected={wiSlot}
+                  onSelect={setWiSlot}
                 />
-                {wiDate && (
-                  <p className="text-sm font-medium">{toDateInput(wiDate)}</p>
-                )}
-                {wiSlotsLoading && (
-                  <p className="text-sm text-muted-foreground">
-                    Loading slots…
-                  </p>
-                )}
-                {!wiSlotsLoading && wiDate && wiSlots.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No open slots this day (closed or fully booked).
-                  </p>
-                )}
-                {!wiSlotsLoading && wiSlots.length > 0 && (
-                  <div className="flex max-h-48 flex-wrap justify-center gap-1 overflow-y-auto">
-                    {wiSlots.map((s) => (
-                      <Button
-                        key={s.time}
-                        size="sm"
-                        variant={wiSlot === s.time ? "default" : "outline"}
-                        onClick={() => setWiSlot(s.time)}
-                      >
-                        {s.time}
-                      </Button>
-                    ))}
-                  </div>
-                )}
               </CardContent>
             </Card>
 

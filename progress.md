@@ -9,16 +9,17 @@ For details on what happened in a phase, see changelog.md.
 | 2 | Auth + role-based access | Built — awaiting test | /specs/phase-2-auth-role-based-access.md | All 13 spec tests pass; after `db reset` re-run `npx tsx scripts/seed-staff.ts` |
 | 3 | Slot-conflict logic (app layer) | Closed | /specs/phase-3-slot-conflict-logic.md | All 12 tests pass; run seed-staff after `db reset`, dev server needed for Test 6 |
 | 4 | Receptionist flow | Closed | /specs/phase-4-receptionist-flow.md | Automated + manual tests pass; committed |
-| 5 | Patient booking flow | Not started | /specs/phase-5-patient-booking.md | |
+| 5 | Patient booking flow | Closed | /specs/phase-5-patient-booking-flow.md | Automated + manual tests pass (incl. full-stack round-trip); committed |
 | 6 | Doctor schedule view | Not started | /specs/phase-6-doctor-view.md | |
 | 7 | Semaphore SMS | Not started | /specs/phase-7-sms.md | External dependency |
 | 8 | Reports | Not started | /specs/phase-8-reports.md | |
+| 9 | Remote deployment & production readiness | Not started | /specs/phase-9-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live |
 
 **Status values:** Not started → Planning (Claude Chat) → Plan mode (OpenCode) →
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
 ## Current focus
-Phase 4 closed (tested, committed). Next: plan Phase 5 — Patient booking flow.
+Phase 5 closed (tested, committed). Next: plan Phase 6 — Doctor schedule view.
 
 ## Renumbering note (this update)
 Auth + role-based access was missing from the original phase list entirely;

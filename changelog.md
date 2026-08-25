@@ -379,3 +379,78 @@ Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
   fine per spec §3.3's "reflect immediately (or after a refresh)".
 - Patient home (`/patient`) doesn't exist yet — a logged-in patient
   visiting `/receptionist` redirects there and will 404 until Phase 5.
+
+---
+
+## Phase 5 — Patient booking flow
+**Date closed:** 2026-08-24
+**Spec:** /specs/phase-5-patient-booking-flow.md
+
+### What was built
+- §1 prerequisite verified before any code: `config.toml`
+  `[auth.email] enable_confirmations = false` — local signups return an
+  active session immediately; no config change needed.
+- `src/app/signup/page.tsx`: email/password/full name/phone with client-side
+  zod validation (phone: optional +, 10–15 digits); `signUp()` puts name/
+  phone in `user_metadata` ONLY — no role field anywhere in the form or
+  payload, per Phase 2's security model; redirect to `/patient` on success.
+- Login page now links to `/signup` (replaces the "arrives later" note).
+- `src/app/patient/layout.tsx` — `requireRole(['patient'])`; resolves
+  Phase 4's known `/patient` 404.
+- `src/app/patient/page.tsx`, two stacked sections:
+  - Book an Appointment: shared `<SlotPicker>` → contact details prefilled
+    from the patient's own `profiles` row (editable) → optional reason →
+    submit via `/api/patients/find-or-create` (own `profileId`) then
+    `createAppointment(source:'online')` on Phase 3 defaults only.
+    Success message uses Addendum A.2's exact framing ("staff will contact
+    you…"); SLOT_TAKEN shows a friendly message and refreshes slots via a
+    `refreshKey` bump — never a raw error surface.
+  - My Appointments: read-only own-row list through the patient session,
+    showing payment method/reference on CONFIRMED rows. No cancel/reschedule
+    anywhere, per spec §6.
+- `src/components/booking/slot-picker.tsx` — shared date→slots→select
+  component fetching Phase 3's `/api/available-slots`. Both call sites use
+  it: the new patient form AND the Phase 4 walk-in form were retrofitted
+  onto it (its inline fetch/state removed).
+- `scripts/test-phase5.ts` — real modules, real sessions, Tests 1–5.
+
+### Deviations from spec
+1. **SlotPicker retrofit of the receptionist form was done** (spec §3.2
+   called it optional): it was a clean swap, so both booking surfaces now
+   share one slot-fetching implementation instead of drifting. Phase 4's
+   automated suite was rerun as regression afterwards and passes unmodified.
+2. One internal accommodation for Next.js 16's stricter
+   `react-hooks/set-state-in-effect` lint rule: SlotPicker defers its fetch
+   one tick (`setTimeout(0)`) so no setState fires synchronously inside the
+   effect body. Behavior is unchanged.
+
+### Files touched
+- `src/app/signup/page.tsx`, `src/app/login/page.tsx`,
+  `src/app/patient/layout.tsx`, `src/app/patient/page.tsx`
+- `src/components/booking/slot-picker.tsx`
+- `src/app/receptionist/page.tsx` (SlotPicker retrofit)
+- `scripts/test-phase5.ts`
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §4)
+| # | Test | Result |
+|---|------|--------|
+| 1 | Fresh signup → findOrCreatePatient creates patients row | PASS (first real non-mirrored run of this path) |
+| 2 | Online request defaults to PENDING | PASS |
+| 3 | Second booking reuses same patients row | PASS (rows=1, sameId=true) |
+| 4 | Patient A cannot see Patient B's appointments | PASS |
+| 5 | Concurrent same-slot → typed SLOT_TAKEN | PASS |
+
+Regression: full Phase 4 suite (5/5) + full Phase 3 suite (12/12) pass
+unmodified after the SlotPicker refactor. Smoke-checked during build:
+`/signup` renders; anonymous `/patient` redirects to login. Lint + tsc clean.
+
+Manual browser tests 6–9 remain for the human — Test 8 (book as patient →
+confirm as receptionist → see CONFIRMED back on the patient dashboard) is
+the first full-stack round-trip of the whole system.
+
+Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
+start `npm run dev` → `npx tsx scripts/test-phase5.ts`.
+
+### Known issues / follow-ups
+- None new. Carried context: staff re-seed required after every `db reset`.
