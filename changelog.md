@@ -6,6 +6,8 @@ This is the source of truth when it diverges from the spec in /specs/.
 
 ---
 
+---
+
 ## Phase 1 — Scaffold & schema
 **Date closed:** 2026-08-23
 **Spec:** /specs/phase-1-project-scaffold-database-schema.md
@@ -453,6 +455,86 @@ Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
 start `npm run dev` → `npx tsx scripts/test-phase5.ts`.
 
 ### Known issues / follow-ups
+- None new. Carried context: staff re-seed required after every `db reset`.
+
+---
+
+## Phase 6 — Doctor schedule view & availability management
+**Date closed:** 2026-08-24
+**Spec:** /specs/phase-6-doctor-schedule-availability.md
+
+### What was built
+- Pre-build check per spec §6: verified Phase 2's actual
+  `appointments_select_doctor` policy text in the committed migration —
+  CONFIRMED-only, unscoped by patient. The spec's "no admin.ts route"
+  reasoning holds; `getSchedule` runs on the caller's own session.
+- `src/lib/schedule/get-schedule.ts` — confirmed appointments joined to
+  patients for a `{from, to}` date range, via the caller's RLS-bound client.
+- `src/lib/availability/update-hours.ts` — updates one
+  `doctor_availability` row; returns non-blocking
+  `conflictingAppointments` count (confirmed appts on that weekday now
+  outside the active window); rejects start>=end when active.
+- `src/lib/availability/manage-exceptions.ts` — `addException`
+  (conflict count for the date + typed ALREADY_CLOSED mapping of the
+  unique-violation) and `removeException` (zero-rows → NOT_FOUND_OR_DENIED).
+- `/doctor`: layout with `requireRole(['doctor'])` (third use) + one page,
+  two tabs — Schedule (Today/This Week toggle, read-only table, zero action
+  buttons) and Manage Availability (inline-editable weekly hours with save,
+  closed-dates list with reopen, add-closure form). Conflict counts surface
+  as sonner warnings, never blocking dialogs.
+- shadcn `switch` component added (first use).
+- `scripts/test-phase6.ts` — real modules/sessions, Tests 1–6.
+
+### Deviations from spec
+1. **Test 2's "rejected by RLS" reframed as scope-correctness** (flagged in
+   plan mode): a receptionist session has full appointment read access BY
+   Phase 2 design, so literal rejection is impossible. The harness asserts
+   what the guarantee actually is — receptionist sees ≥ doctor's view;
+   patient's result set exactly equals their own rows (both statuses). My
+   first assertion ("patient sees 0 rows") was wrong and the system right:
+   the patient's own PENDING row is visible to them; fixed the harness.
+2. **updateWorkingHours gained an explicit zero-rows check** before testing
+   revealed its necessity: supabase-js reports an RLS-denied UPDATE as
+   success-with-zero-rows, so without it Test 3's denial assertions would
+   false-pass. Same pattern Phase 4's update functions already used.
+3. Harness is reset-required like Phases 3–5's (fixed fixture dates).
+
+### Files touched
+- `src/app/doctor/layout.tsx`, `src/app/doctor/page.tsx`
+- `src/lib/schedule/get-schedule.ts`,
+  `src/lib/availability/{update-hours,manage-exceptions}.ts`
+- `src/components/ui/switch.tsx` (shadcn)
+- `scripts/test-phase6.ts`
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §4)
+| # | Test | Result |
+|---|------|--------|
+| 1 | getSchedule CONFIRMED-only in range, patient joined | PASS |
+| 2 | Scope-correctness for rec/patient sessions | PASS (reframed per deviation #1) |
+| 3 | updateWorkingHours doctor yes / rec+pat denied | PASS |
+| 4 | add/remove exceptions doctor yes / rec+pat denied | PASS |
+| 5 | Doctor closure → getAvailableSlots returns [] | PASS (cross-phase write→read loop closed) |
+| 6 | conflictingAppointments count reported; writes proceed | PASS (with=1, without=0) |
+
+Regression: Phase 4 suite 5/5 and Phase 5 suite 5/5 pass unmodified after
+this phase's changes. Smoke-checked during build: anonymous `/doctor`
+redirects to login. Lint + tsc clean.
+
+Manual browser tests 7–12 remain for the human (landing on `/doctor`,
+schedule tab vs Phase 5's confirmed booking, editing hours persistently,
+closure → empty slot list on booking forms, conflict warning toast, role
+guard both directions).
+
+Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
+start `npm run dev` → `npx tsx scripts/test-phase6.ts`.
+
+### Known issues / follow-ups
+- None new. Carried context: staff re-seed required after every `db reset`.
+- Known gap carried per spec §5: closures/hours changes never cancel or move
+  existing bookings; the warning count is visibility only.
+- No live updates; tab data refreshes via explicit reloads/actions only.
+
 ---
 
 ## Phase 7 — Semaphore SMS
@@ -558,89 +640,3 @@ start `npm run dev` → `npx tsx scripts/test-phase7.ts`.
   reports on this table.
 - `.env.local` was restored to `SEMAPHORE_DRY_RUN=true` after the human's
   manual real-send test (Test 7).
-
----
-
-## Phase 8 — Reports
-
----
-
-## Phase 6 — Doctor schedule view & availability management
-**Date closed:** 2026-08-24
-**Spec:** /specs/phase-6-doctor-schedule-availability.md
-
-### What was built
-- Pre-build check per spec §6: verified Phase 2's actual
-  `appointments_select_doctor` policy text in the committed migration —
-  CONFIRMED-only, unscoped by patient. The spec's "no admin.ts route"
-  reasoning holds; `getSchedule` runs on the caller's own session.
-- `src/lib/schedule/get-schedule.ts` — confirmed appointments joined to
-  patients for a `{from, to}` date range, via the caller's RLS-bound client.
-- `src/lib/availability/update-hours.ts` — updates one
-  `doctor_availability` row; returns non-blocking
-  `conflictingAppointments` count (confirmed appts on that weekday now
-  outside the active window); rejects start>=end when active.
-- `src/lib/availability/manage-exceptions.ts` — `addException`
-  (conflict count for the date + typed ALREADY_CLOSED mapping of the
-  unique-violation) and `removeException` (zero-rows → NOT_FOUND_OR_DENIED).
-- `/doctor`: layout with `requireRole(['doctor'])` (third use) + one page,
-  two tabs — Schedule (Today/This Week toggle, read-only table, zero action
-  buttons) and Manage Availability (inline-editable weekly hours with save,
-  closed-dates list with reopen, add-closure form). Conflict counts surface
-  as sonner warnings, never blocking dialogs.
-- shadcn `switch` component added (first use).
-- `scripts/test-phase6.ts` — real modules/sessions, Tests 1–6.
-
-### Deviations from spec
-1. **Test 2's "rejected by RLS" reframed as scope-correctness** (flagged in
-   plan mode): a receptionist session has full appointment read access BY
-   Phase 2 design, so literal rejection is impossible. The harness asserts
-   what the guarantee actually is — receptionist sees ≥ doctor's view;
-   patient's result set exactly equals their own rows (both statuses). My
-   first assertion ("patient sees 0 rows") was wrong and the system right:
-   the patient's own PENDING row is visible to them; fixed the harness.
-2. **updateWorkingHours gained an explicit zero-rows check** before testing
-   revealed its necessity: supabase-js reports an RLS-denied UPDATE as
-   success-with-zero-rows, so without it Test 3's denial assertions would
-   false-pass. Same pattern Phase 4's update functions already used.
-3. Harness is reset-required like Phases 3–5's (fixed fixture dates).
-
-### Files touched
-- `src/app/doctor/layout.tsx`, `src/app/doctor/page.tsx`
-- `src/lib/schedule/get-schedule.ts`,
-  `src/lib/availability/{update-hours,manage-exceptions}.ts`
-- `src/components/ui/switch.tsx` (shadcn)
-- `scripts/test-phase6.ts`
-- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
-
-### Test cases (spec §4)
-| # | Test | Result |
-|---|------|--------|
-| 1 | getSchedule CONFIRMED-only in range, patient joined | PASS |
-| 2 | Scope-correctness for rec/patient sessions | PASS (reframed per deviation #1) |
-| 3 | updateWorkingHours doctor yes / rec+pat denied | PASS |
-| 4 | add/remove exceptions doctor yes / rec+pat denied | PASS |
-| 5 | Doctor closure → getAvailableSlots returns [] | PASS (cross-phase write→read loop closed) |
-| 6 | conflictingAppointments count reported; writes proceed | PASS (with=1, without=0) |
-
-Regression: Phase 4 suite 5/5 and Phase 5 suite 5/5 pass unmodified after
-this phase's changes. Smoke-checked during build: anonymous `/doctor`
-redirects to login. Lint + tsc clean.
-
-Manual browser tests 7–12 remain for the human (landing on `/doctor`,
-schedule tab vs Phase 5's confirmed booking, editing hours persistently,
-closure → empty slot list on booking forms, conflict warning toast, role
-guard both directions).
-
-Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
-start `npm run dev` → `npx tsx scripts/test-phase6.ts`.
-
-### Known issues / follow-ups
-- None new. Carried context: staff re-seed required after every `db reset`.
-- Known gap carried per spec §5: closures/hours changes never cancel or move
-  existing bookings; the warning count is visibility only.
-- No live updates; tab data refreshes via explicit reloads/actions only.
-
----
-
-## Phase 7 — Semaphore SMS
