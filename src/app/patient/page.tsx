@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -40,6 +41,7 @@ type MyAppointmentRow = {
 
 export default function PatientPage() {
   const supabase = createClient();
+  const router = useRouter();
 
   const [profile, setProfile] = useState<{
     id: string;
@@ -121,6 +123,17 @@ export default function PatientPage() {
       toast.error("Name, phone, date, and time slot are required.");
       return;
     }
+
+    // Session-drift guard: if the signed-in user changed since this page
+    // loaded (e.g. another tab logged into a different account — shared
+    // per-origin storage), stop instead of writing under the wrong session.
+    const { data } = await supabase.auth.getUser();
+    if (!data.user || data.user.id !== profile.id) {
+      toast.error("Your session changed — reloading. Please try again.");
+      router.refresh();
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/patients/find-or-create", {

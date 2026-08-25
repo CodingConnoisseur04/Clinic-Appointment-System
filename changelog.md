@@ -453,7 +453,115 @@ Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
 start `npm run dev` → `npx tsx scripts/test-phase5.ts`.
 
 ### Known issues / follow-ups
-- None new. Carried context: staff re-seed required after every `db reset`.
+---
+
+## Phase 7 — Semaphore SMS
+**Date closed:** 2026-08-25
+**Spec:** /specs/phase-7-semaphore-sms.md
+
+### What was built
+- §0.1 reversal accepted (no objection): reminder trigger is the gated HTTP
+  route `/api/cron/send-reminders`, not pg_cron/pg_net/Edge Functions.
+- `.env.local.example` += `SEMAPHORE_API_KEY`, `SEMAPHORE_SENDER_NAME`,
+  `SEMAPHORE_DRY_RUN=true` (committed default, stays true after closeout),
+  `CRON_SECRET`; local values in `.env.local`.
+- Migration `20260825012145_phase7_sms_insert_policy.sql` — single policy
+  `sms_logs_insert_receptionist` (timestamp verified > Phase 3's; grants
+  already covered by Phase 1).
+- `src/lib/sms/send-sms.ts` — Semaphore v4 POST; dry-run short-circuits
+  BEFORE any network I/O and returns synthetic success; injectable
+  `fetchImpl` so the harness can prove zero network calls.
+- `src/lib/sms/send-confirmation.ts` — caller-session client, one correctly
+  typed `sms_logs` row per attempt regardless of outcome, never throws
+  (FR5a); optional `simulateFailure` flag drives Test 4.
+- `/api/cron/send-reminders` — 401 unless `Bearer CRON_SECRET`; admin client
+  (first genuinely session-less case per spec §7); ±12h window around
+  now+24h computed precisely on date+time; summary counts only.
+- Phase 4 confirm dialog: "no SMS" note removed (confirm dialog now says an
+  SMS goes out automatically; cancel dialog reworded to "patient is not
+  notified automatically — call them"); on confirm success it calls the new
+  route and toasts sent/failed non-blockingly.
+- `scripts/test-phase7.ts` — dry-run only; hard-exits if SEMAPHORE_DRY_RUN
+  isn't true.
+
+### Deviations from spec
+1. **Confirmation SMS goes through a new route, not direct lib import from
+   the dialog** (spec §3.2 implied calling `sendConfirmationSms` from the UI
+   with the receptionist's client). The confirm dialog is a CLIENT component;
+   importing the lib there would bundle send-sms.ts into browser code where
+   `SEMAPHORE_API_KEY` correctly doesn't exist — real sends could never work.
+   Fix: `POST /api/sms/send-confirmation`, auth-gated via cookie session,
+   builds the receptionist's own RLS-bound server client and calls the same
+   lib function. The spec's security intent (receptionist session + RLS
+   insert policy) is fully preserved; only the transport changed. Surfaced
+   by Test 1's infrastructure before it could become a silent production bug.
+2. **`server-only` guard intentionally NOT added to the sms lib modules** so
+   the harness can import them directly; safety comes from the route gate +
+   non-public env vars instead (commented in-code).
+3. Reminder window implemented as **±12h around now+24h** (approved plan
+   default), SQL pre-filter widened by a day then filtered precisely on
+   date+time in JS.
+4. **Post-manual-test fix: find-or-create no longer trusts body-supplied
+   profileId** (human-reported failure during browser testing). Root cause:
+   two accounts' sessions in one browser (shared per-origin storage) — a
+   doctor login overwrote the patient session mid-flow, so the booking insert
+   correctly hit RLS as the wrong role. Diagnosis confirmed policies were
+   fine; but the incident exposed that `/api/patients/find-or-create`
+   accepted any caller-supplied `profileId`. Fixes:
+   - route now returns 403 when a non-receptionist caller supplies a
+     `profileId` other than their own uid;
+   - patient booking form re-verifies `getUser()` matches the loaded profile
+     before submitting and reloads on drift;
+   - harness Tests 7–8 added as regression (foreign-profileId 403; doctor
+     session cannot book).
+5. **Operational note for the human:** after every `db reset`, browser-held
+   sessions are dead — sign out (or use a fresh incognito context) before
+   testing to avoid dual/stale-session confusion. One account per browser
+   context; incognito or a separate browser gives clean isolation.
+
+### Files touched
+- `supabase/migrations/20260825012145_phase7_sms_insert_policy.sql`
+- `src/lib/sms/{send-sms,send-confirmation}.ts`
+- `src/app/api/cron/send-reminders/route.ts`
+- `src/app/api/sms/send-confirmation/route.ts`
+- `src/app/receptionist/page.tsx` (dialog copy + SMS step)
+- `.env.local.example`, `.env.local` (local only)
+- `scripts/test-phase7.ts`
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §5)
+| # | Test | Result |
+|---|------|--------|
+| 1 | Dry-run sendSms succeeds with zero network calls | PASS (spy fetch never invoked) |
+| 2 | Confirmation logs correctly-typed row via receptionist session | PASS |
+| 3 | sms_logs insert denied for patient/doctor sessions | PASS |
+| 4 | Failure path logs 'failed', never throws | PASS |
+| 5 | Reminder route 401 without secret | PASS |
+| 6 | Only ~24h-out appointment reminded (dry-run) | PASS |
+| 7 | find-or-create rejects foreign profileId (403) | PASS (fix regression, deviation #4) |
+| 8 | Doctor session cannot book via createAppointment | PASS (fix regression, deviation #4) |
+
+Regression: Phase 4 suite 5/5 unmodified. Lint + tsc clean.
+
+Manual tests remain for the human: Test 7 (the ONE deliberate real-credit
+send — flip DRY_RUN=false with a real key + your own phone number, then flip
+back) and Test 8 (curl the reminder route with CRON_SECRET).
+
+Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
+start `npm run dev` → `npx tsx scripts/test-phase7.ts`.
+
+### Known issues / follow-ups
+- Scheduling `/api/cron/send-reminders` is Phase 9's job (vercel.json or
+  host cron); until then reminders fire only when manually curl'd.
+- If a confirmation is retried (dialog used twice), each attempt logs its own
+  sms_logs row — acceptable at this scale, worth remembering when Phase 8
+  reports on this table.
+- `.env.local` was restored to `SEMAPHORE_DRY_RUN=true` after the human's
+  manual real-send test (Test 7).
+
+---
+
+## Phase 8 — Reports
 
 ---
 
@@ -528,6 +636,7 @@ Run order: `npx supabase db reset` → `npx tsx scripts/seed-staff.ts` →
 start `npm run dev` → `npx tsx scripts/test-phase6.ts`.
 
 ### Known issues / follow-ups
+- None new. Carried context: staff re-seed required after every `db reset`.
 - Known gap carried per spec §5: closures/hours changes never cancel or move
   existing bookings; the warning count is visibility only.
 - No live updates; tab data refreshes via explicit reloads/actions only.

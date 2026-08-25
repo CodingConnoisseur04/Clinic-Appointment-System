@@ -608,8 +608,8 @@ export default function ReceptionistPage() {
           <DialogHeader>
             <DialogTitle>Confirm request</DialogTitle>
             <DialogDescription>
-              Log payment, then confirm. No SMS will be sent (not yet
-              implemented).
+              Log payment, then confirm. A confirmation SMS is sent to the
+              patient automatically after confirming.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
@@ -646,7 +646,7 @@ export default function ReceptionistPage() {
                 if (!confirmTarget) return;
                 const target = confirmTarget;
                 setConfirmTarget(null);
-                await act(
+                const confirmed = await act(
                   () =>
                     confirmAppointment(supabase, {
                       appointmentId: target.id,
@@ -656,6 +656,19 @@ export default function ReceptionistPage() {
                   "Request confirmed."
                 );
                 setConfirmRef("");
+                if (confirmed) {
+                  const res = await fetch("/api/sms/send-confirmation", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ appointmentId: target.id }),
+                  });
+                  const sms = await res.json();
+                  if (res.ok && sms.delivered) {
+                    toast.success("Confirmation SMS sent.");
+                  } else {
+                    toast.error("SMS failed to send (logged).");
+                  }
+                }
               }}
             >
               Confirm
@@ -671,7 +684,8 @@ export default function ReceptionistPage() {
             <DialogTitle>Cancel appointment?</DialogTitle>
             <DialogDescription>
               This sets the appointment to CANCELLED and frees the slot. It
-              stays in history. No SMS will be sent (not yet implemented).
+              stays in history. The patient is not notified automatically —
+              call them if the cancellation is on short notice.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
