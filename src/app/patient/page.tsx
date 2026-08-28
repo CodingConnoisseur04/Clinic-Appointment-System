@@ -184,7 +184,6 @@ export default function PatientPage() {
         <h1 className="text-2xl font-semibold tracking-tight">
           Patient Dashboard
         </h1>
-        <Badge variant="outline">Patient</Badge>
       </header>
 
       {/* ---- Book an Appointment ---- */}
@@ -283,14 +282,15 @@ export default function PatientPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loadingAppts ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : appointments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No appointments yet — submit your first request above.
-            </p>
-          ) : (
-            <Table>
+            {loadingAppts ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : appointments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No appointments yet — submit your first request above.
+              </p>
+            ) : (
+              <div className="-mx-2 overflow-x-auto px-2">
+                <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
@@ -328,9 +328,10 @@ export default function PatientPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          )}
+                </TableBody>
+              </Table>
+              </div>
+            )}
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendSms } from "@/lib/sms/send-sms";
+import { CLINIC } from "@/lib/brand";
 
 export type SendConfirmationResult = {
   logged: true;
@@ -35,7 +36,7 @@ export async function sendConfirmationSms(
 
       const result = await sendSms({
         number: phone,
-        message: `Clinic: your appointment on ${appt.appointment_date} at ${appt.appointment_time.slice(0, 5)} is CONFIRMED. See you then!`,
+        message: `${CLINIC.name}: your appointment on ${appt.appointment_date} at ${appt.appointment_time.slice(0, 5)} is CONFIRMED. See you then!`,
       });
       return result.success;
     } catch {

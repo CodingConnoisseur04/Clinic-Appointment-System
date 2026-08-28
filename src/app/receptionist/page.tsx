@@ -310,7 +310,7 @@ export default function ReceptionistPage() {
       </header>
 
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 py-1">
           <TabsTrigger value="pending">
             Pending Requests
             {pendingRequests.length > 0 && (
@@ -339,7 +339,8 @@ export default function ReceptionistPage() {
                   3&apos;s createAppointment while the patient UI is unbuilt.)
                 </p>
               ) : (
-                <Table>
+                <div className="-mx-2 overflow-x-auto px-2">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -374,6 +375,7 @@ export default function ReceptionistPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -574,6 +576,7 @@ export default function ReceptionistPage() {
                   No appointments match the filters.
                 </p>
               ) : (
+                <div className="-mx-2 overflow-x-auto px-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -652,6 +655,7 @@ export default function ReceptionistPage() {
                     })}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>

@@ -702,3 +702,93 @@ start `npm run dev` → `npx tsx scripts/test-phase8.ts`.
   no-shows — three different time axes by design; keep in mind when
   comparing cards across an odd range boundary.
 - All feature phases complete. Phase 9 (deployment) is the last spec.
+
+---
+
+## Phase 9 — Landing page, branding & logout
+**Date closed:**
+**Spec:** /specs/phase-9-landing-branding-logout.md
+
+### What was built
+- `src/lib/brand.ts` — single source of truth for clinic identity (name,
+  tagline, doctor, address, services, clearly-marked sample phone).
+  `layout.tsx` metadata now uses it.
+- Migration `20260826082101_phase9_landing.sql` — the project's first
+  `to anon` policy (`availability_select_anon`, select-only). Reasoning
+  verified per spec §2.1; no write access granted.
+- `src/app/page.tsx` replaced entirely: public landing page for Golden
+  Friendship Family Clinic — hero with Log In / Sign Up, services, doctor
+  bio, **live hours from `doctor_availability`** (grouped into day-ranges,
+  e.g. "Mon–Fri · 9:00 AM – 5:00 PM", closed days shown), location slip with
+  sample phone marked as such. Built as an async server component — no API
+  route needed once anon read exists.
+- Login/signup: back-to-home link + clinic name in the card header.
+- `src/components/dashboard-header.tsx` — shared header on all three role
+  layouts (clinic name, user identity, working Sign Out with in-flight
+  label). `requireRole()` untouched.
+- Light branding: golden-amber primary/ring via shadcn CSS variables
+  (light + dark modes), themed `::selection` and caret color,
+  `touch-action: manipulation`, `theme-color` meta, `color-scheme: light`.
+- SMS confirmation template now names the clinic.
+- Mobile-first pass (Playwright at 375px, priority order per §4B): all
+  receptionist/doctor/patient tables got horizontal scroll containers; the
+  receptionist tab strip now wraps (it was overflowing and leaving a dead
+  white strip); doctor schedule card header stacks on mobile; duplicate
+  role badge removed from patient page.
+
+### Deviations from spec
+1. **Landing composition chosen via the Impeccable concept round** (per
+   §4A's skill mandate): `concept-seed` dealt three structures; the human
+   locked "Neighborhood Bulletin Board" (pinned notices on a warm board).
+   Direction contract comment embedded in `page.tsx`; code-led build (no
+   image tooling in this environment).
+2. **Font bug fixed app-wide, not just on new pages:** `globals.css` mapped
+   `--font-sans` to a variable name `next/font` never emitted, so the whole
+   app had been silently rendering in a serif fallback since Phase 1. Fixed
+   the mapping; every surface now renders Geist Sans. Surfaced by the first
+   screenshot inspection — exactly the "browser surfaces you didn't draw"
+   class of defect the craft floor warns about.
+3. **A kicker line above the landing h1 was built, caught, and removed** in
+   the fix batch — it's a hard ban in the craft floor.
+4. **Test 2 of the Phase 8 suite failed once during regression** — cause was
+   running it after the Phase 7 suite on the same DB state (SMS counts
+   doubled); the suite is documented reset-required. Not a product bug.
+
+### Files touched
+- `src/lib/brand.ts`, `src/lib/sms/send-confirmation.ts`
+- `supabase/migrations/20260826082101_phase9_landing.sql`
+- `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/globals.css`
+- `src/app/login/page.tsx`, `src/app/signup/page.tsx`
+- `src/components/dashboard-header.tsx`
+- `src/app/{patient,receptionist,doctor}/layout.tsx`
+- `src/app/{patient,receptionist,doctor}/page.tsx` (mobile fix pass)
+- `scripts/test-phase9.ts`
+- `PRODUCT.md` (new — Impeccable init, brand name recorded)
+- `changelog.md`, `progress.md`, `AI_TOOL_LOG.md`
+
+### Test cases (spec §5)
+| # | Test | Result |
+|---|------|--------|
+| 1 | anon reads doctor_availability | PASS (5 rows) |
+| 2 | anon cannot write it | PASS (RLS violation) |
+| 3 | authenticated read/write unchanged | PASS |
+| 4–8, 9–10 | manual browser + skill passes | see below |
+| 11–13 | 375px checks | PASS after fix batch (automated via Playwright) |
+
+Automated: Phase 9 harness 3/3; Phase 7 suite 8/8; Phase 8 suite 4/4 (after
+its documented reset); lint + tsc clean; Impeccable detector: zero findings.
+Web Interface Guidelines applied to login/signup/header (name/autocomplete/
+spellcheck/inputmode attributes, touch-action, theme-color, color-scheme).
+
+Manual items still open for the human: Test 7 (real SMS showing clinic
+name), Test 10 (subjective critique rounds if desired), and a final eyeball
+of the landing page at 375px in a real phone browser.
+
+### Known issues / follow-ups
+- Deployment spec must land as `specs/phase-10-deployment.md` (renumbered
+  per this spec's header); progress.md Current focus already notes it.
+- Sample phone number on the landing page is illustrative only — replace if
+  a real line ever exists.
+- The old serif-fallback bug means all pre-Phase-9 screenshots showed
+  non-Geist type; nothing to do, just context for anyone comparing old
+  captures.

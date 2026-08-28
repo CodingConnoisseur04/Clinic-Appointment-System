@@ -11,13 +11,15 @@ For details on what happened in a phase, see changelog.md.
 | 4 | Receptionist flow | Closed | /specs/phase-4-receptionist-flow.md | Automated + manual tests pass; committed |
 | 5 | Patient booking flow | Closed | /specs/phase-5-patient-booking-flow.md | Automated + manual tests pass (incl. full-stack round-trip); committed |
 | 6 | Doctor schedule view | Closed | /specs/phase-6-doctor-schedule-availability.md | Automated + manual tests pass; committed |
-| 7 | Semaphore SMS | Closed | /specs/phase-7-semaphore-sms.md | Automated + manual tests pass (incl. real send); dual-session hardening committed || 8 | Reports | Closed | /specs/phase-8-reports.md | Automated + manual tests pass; committed || 9 | Remote deployment & production readiness | Not started | /specs/phase-9-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live |
+| 7 | Semaphore SMS | Closed | /specs/phase-7-semaphore-sms.md | Automated + manual tests pass (incl. real send); dual-session hardening committed || 8 | Reports | Closed | /specs/phase-8-reports.md | Automated + manual tests pass; committed |
+| 9 | Landing, branding & logout | Built — awaiting test | /specs/phase-9-landing-branding-logout.md | Harness 3/3 + regressions clean; mobile fix pass done; manual tests 4-10 pending (human) || 9 | Remote deployment & production readiness | Not started | /specs/phase-9-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live |
 
 **Status values:** Not started → Planning (Claude Chat) → Plan mode (OpenCode) →
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
 ## Current focus
-Phase 8 closed (tested, committed). All 8 feature phases done. Next: Phase 9 (deployment) — spec pending from Claude Chat.
+## Current focus
+Phase 9 built — awaiting human test (reset → seed-staff → `npx tsx scripts/test-phase9.ts`; manual browser tests per spec §5). No commit yet. Deployment is Phase 10 — spec must be named `phase-10-deployment.md`.
 
 ## Renumbering note (this update)
 Auth + role-based access was missing from the original phase list entirely;

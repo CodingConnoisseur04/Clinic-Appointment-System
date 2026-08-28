@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { CLINIC } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -56,12 +57,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 p-8 dark:bg-black">
+    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 p-8 dark:bg-black">
+      <Link
+        href="/"
+        className="mb-6 text-sm text-stone-500 underline-offset-4 hover:text-amber-700 hover:underline"
+      >
+        ← Back to home
+      </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
-            Clinic staff and registered patients
+            {CLINIC.name} — staff and registered patients
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -70,8 +77,10 @@ export default function LoginPage() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 autoComplete="email"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -81,6 +90,7 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 autoComplete="current-password"
                 required

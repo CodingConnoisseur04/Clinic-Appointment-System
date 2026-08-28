@@ -247,7 +247,7 @@ export default function DoctorPage() {
         <TabsContent value="schedule" className="mt-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>Confirmed appointments</CardTitle>
                   <CardDescription>
@@ -255,7 +255,7 @@ export default function DoctorPage() {
                     the front desk.
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                   <Button
                     size="sm"
                     variant={range === "today" ? "default" : "outline"}
@@ -281,6 +281,7 @@ export default function DoctorPage() {
                   No confirmed appointments in this range.
                 </p>
               ) : (
+                <div className="-mx-2 overflow-x-auto px-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -303,6 +304,7 @@ export default function DoctorPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -319,6 +321,7 @@ export default function DoctorPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="-mx-2 overflow-x-auto px-2">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -382,6 +385,7 @@ export default function DoctorPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
 
@@ -422,6 +426,7 @@ export default function DoctorPage() {
                   No upcoming closures.
                 </p>
               ) : (
+                <div className="-mx-2 overflow-x-auto px-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -448,6 +453,7 @@ export default function DoctorPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
