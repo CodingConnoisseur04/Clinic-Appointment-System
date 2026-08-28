@@ -18,7 +18,9 @@ For details on what happened in a phase, see changelog.md.
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
 ## Current focus
-## Current focus
+
+**Pending commit (feat/receptionist-improvements branch):** Receptionist UX patch — Completed badge replaces attendance buttons, past-date blocking in SlotPicker, sort-by-time toggle in Appointments tab. `changelog.md` has full details. Awaiting human test on `npm run dev` before commit.
+
 Phase 9 built — awaiting human test (reset → seed-staff → `npx tsx scripts/test-phase9.ts`; manual browser tests per spec §5). No commit yet. Deployment is Phase 10 — spec must be named `phase-10-deployment.md`.
 
 ## Renumbering note (this update)

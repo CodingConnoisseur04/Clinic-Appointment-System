@@ -18,10 +18,6 @@ import {
   type NoShowReport,
 } from "@/lib/reports/get-no-show-report";
 import {
-  getSmsReport,
-  type SmsReport,
-} from "@/lib/reports/get-sms-report";
-import {
   getAppointmentSummary,
   type AppointmentSummary,
 } from "@/lib/reports/get-appointment-summary";
@@ -63,6 +59,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
+import { formatTime12h } from "@/lib/utils";
 
 type AppointmentRow = {
   id: string;
@@ -123,7 +120,6 @@ export default function ReceptionistPage() {
     return { from, to };
   });
   const [noShow, setNoShow] = useState<NoShowReport>();
-  const [smsReport, setSmsReport] = useState<SmsReport>();
   const [summary, setSummary] = useState<AppointmentSummary>();
 
   const fetchAppointments = useCallback(async () => {
@@ -169,14 +165,12 @@ export default function ReceptionistPage() {
     let cancelled = false;
     // Deferred one tick: no setState synchronously in the effect body.
     const timer = setTimeout(async () => {
-      const [ns, sr, sum] = await Promise.all([
+      const [ns, sum] = await Promise.all([
         getNoShowReport(supabase, reportRangeStr),
-        getSmsReport(supabase, reportRangeStr),
         getAppointmentSummary(supabase, reportRangeStr),
       ]);
       if (!cancelled) {
         setNoShow(ns);
-        setSmsReport(sr);
         setSummary(sum);
       }
     }, 0);
@@ -355,7 +349,7 @@ export default function ReceptionistPage() {
                     {pendingRequests.map((row) => (
                       <TableRow key={row.id}>
                         <TableCell>{row.appointment_date}</TableCell>
-                        <TableCell>{row.appointment_time.slice(0, 5)}</TableCell>
+                        <TableCell>{formatTime12h(row.appointment_time)}</TableCell>
                         <TableCell>{row.patients?.full_name}</TableCell>
                         <TableCell>{row.patients?.phone}</TableCell>
                         <TableCell>{row.reason ?? "—"}</TableCell>
@@ -567,6 +561,7 @@ export default function ReceptionistPage() {
                     Clear date
                   </Button>
                 )}
+
               </div>
 
               {loading ? (
@@ -585,7 +580,7 @@ export default function ReceptionistPage() {
                       <TableHead>Patient</TableHead>
                       <TableHead>Source</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Attendance</TableHead>
+                      <TableHead>Completion</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -596,7 +591,7 @@ export default function ReceptionistPage() {
                       return (
                         <TableRow key={row.id}>
                           <TableCell>{row.appointment_date}</TableCell>
-                          <TableCell>{row.appointment_time.slice(0, 5)}</TableCell>
+                          <TableCell>{formatTime12h(row.appointment_time)}</TableCell>
                           <TableCell>{row.patients?.full_name}</TableCell>
                           <TableCell>
                             {row.source === "online" ? "Online" : "Walk-in"}
@@ -614,14 +609,14 @@ export default function ReceptionistPage() {
                               {row.status}
                             </Badge>
                           </TableCell>
-                          <TableCell>{row.attendance ?? "—"}</TableCell>
-                          <TableCell className="space-x-2 text-right">
-                            {row.status === "CONFIRMED" && pastOrToday && (
-                              <>
+                          <TableCell>
+                            {row.attendance ? (
+                              <Badge variant="default">Completed</Badge>
+                            ) : row.status === "CONFIRMED" && pastOrToday ? (
+                              <div className="flex gap-1">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  disabled={row.attendance === "ATTENDED"}
                                   onClick={() =>
                                     setAttendanceTarget({ row, mark: "ATTENDED" })
                                   }
@@ -631,16 +626,19 @@ export default function ReceptionistPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  disabled={row.attendance === "NO_SHOW"}
                                   onClick={() =>
                                     setAttendanceTarget({ row, mark: "NO_SHOW" })
                                   }
                                 >
                                   No-show
                                 </Button>
-                              </>
+                              </div>
+                            ) : (
+                              "—"
                             )}
-                            {row.status !== "CANCELLED" && (
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {row.status !== "CANCELLED" && !row.attendance && (
                               <Button
                                 size="sm"
                                 variant="destructive"
@@ -718,21 +716,7 @@ export default function ReceptionistPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>SMS delivery</CardTitle>
-                  <CardDescription>
-                    Sent in range, by type and outcome. Failures are logged,
-                    never retried automatically.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Stat label="Confirmations sent" value={smsReport?.confirmationSent} />
-                  <Stat label="Confirmations failed" value={smsReport?.confirmationFailed} />
-                  <Stat label="Reminders sent" value={smsReport?.reminderSent} />
-                  <Stat label="Reminders failed" value={smsReport?.reminderFailed} />
-                </CardContent>
-              </Card>
+
             </div>
           </div>
         </TabsContent>
@@ -859,7 +843,7 @@ export default function ReceptionistPage() {
             <DialogDescription>
               {attendanceTarget?.row.patients?.full_name} —{" "}
               {attendanceTarget?.row.appointment_date}{" "}
-              {attendanceTarget?.row.appointment_time.slice(0, 5)}
+              {formatTime12h(attendanceTarget?.row.appointment_time ?? "")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

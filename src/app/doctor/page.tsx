@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatTime12h } from "@/lib/utils";
 
 type AvailabilityRow = {
   id: string;
@@ -296,7 +297,7 @@ export default function DoctorPage() {
                     {schedule.map((row) => (
                       <TableRow key={row.id}>
                         <TableCell>{row.appointment_date}</TableCell>
-                        <TableCell>{row.appointment_time.slice(0, 5)}</TableCell>
+                        <TableCell>{formatTime12h(row.appointment_time)}</TableCell>
                         <TableCell>{row.patients?.full_name}</TableCell>
                         <TableCell>{row.patients?.phone}</TableCell>
                         <TableCell>{row.reason ?? "—"}</TableCell>

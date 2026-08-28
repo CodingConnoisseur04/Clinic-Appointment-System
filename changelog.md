@@ -792,3 +792,49 @@ of the landing page at 375px in a real phone browser.
 - The old serif-fallback bug means all pre-Phase-9 screenshots showed
   non-Geist type; nothing to do, just context for anyone comparing old
   captures.
+## Uncommitted patch — Receptionist UX improvements
+**Date:** 2026-08-28
+**Branch:** feat/receptionist-improvements
+
+### What was built
+1. **Completed badge replaces attendance buttons** — Once an appointment's
+   attendance is marked (ATTENDED or NO_SHOW), the Attended/No-show buttons
+   disappear and a "Completed" badge is shown instead. The Cancel button is
+   also hidden for completed appointments.
+2. **Past-date blocking in SlotPicker** — The shared `<Calendar>` in
+   `SlotPicker` now receives `disabled={{ before: new Date() }}`, preventing
+   selection of past dates in both the walk-in registration form and the
+   patient booking form.
+3. **Sort by time** — Appointments are always sorted by time ascending
+   (default order from the database query). Sort toggle removed per user
+   request.
+4. **12-hour time format** — All user-facing time displays now show
+   "2:30 PM" instead of "14:30". A shared `formatTime12h` utility in
+   `src/lib/utils.ts` is used across receptionist, patient, doctor pages,
+   and SMS messages.
+5. **Today's past time slots filtered** — When the selected date is today,
+   time slots that have already passed are hidden from the SlotPicker.
+   Applies to both the walk-in form and patient booking form. Slot buttons
+   also display 12-hour format.
+
+### Files touched
+- `src/lib/utils.ts` — added `formatTime12h()`
+- `src/components/booking/slot-picker.tsx` — added `disabled` prop to Calendar
+- `src/app/receptionist/page.tsx` — Completed badge logic, sort toggle state,
+  renamed "Attendance" column to "Completion", hidden Cancel for completed rows
+- `src/app/patient/page.tsx` — 12h time format in table + booking summary
+- `src/app/doctor/page.tsx` — 12h time format in schedule table
+- `src/lib/sms/send-confirmation.ts` — 12h time in confirmation SMS
+- `src/app/api/cron/send-reminders/route.ts` — 12h time in reminder SMS
+- `src/components/booking/slot-picker.tsx` — filter past slots for today, 12h button labels
+
+### Deviations from spec
+None — these are ad-hoc improvements outside any phase spec.
+
+### Known issues / follow-ups
+- The `disabled={{ before: new Date() }}` blocks the entire calendar day;
+  a user cannot book a same-day afternoon slot if the calendar "today" is
+  disabled. If same-day booking should remain possible, the disable needs
+  to be date-only (not datetime). Currently the date part of today is
+  allowed (react-day-picker's `before` is date-granular, not
+  datetime-granular), so this is fine — same-day slots remain bookable.

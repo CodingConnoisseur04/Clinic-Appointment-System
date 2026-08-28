@@ -8,6 +8,7 @@ import {
   createAppointment,
 } from "@/lib/booking/create-appointment";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
+import { formatTime12h } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -252,7 +253,7 @@ export default function PatientPage() {
               </div>
               {date && slot && (
                 <p className="text-sm text-muted-foreground">
-                  Requesting {toDateInput(date)} at {slot}.
+                  Requesting {toDateInput(date)} at {formatTime12h(slot)}.
                 </p>
               )}
               <Button
@@ -304,7 +305,7 @@ export default function PatientPage() {
                 {appointments.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{row.appointment_date}</TableCell>
-                    <TableCell>{row.appointment_time.slice(0, 5)}</TableCell>
+                    <TableCell>{formatTime12h(row.appointment_time)}</TableCell>
                     <TableCell>
                       <Badge
                         variant={

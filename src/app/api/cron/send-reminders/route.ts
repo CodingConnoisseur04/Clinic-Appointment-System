@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendSms } from "@/lib/sms/send-sms";
+import { formatTime12h } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
 
     const result = await sendSms({
       number: phone,
-      message: `Clinic reminder: you have an appointment on ${appt.appointment_date} at ${appt.appointment_time.slice(0, 5)}.`,
+      message: `Clinic reminder: you have an appointment on ${appt.appointment_date} at ${formatTime12h(appt.appointment_time)}.`,
     });
 
     await supabase.from("sms_logs").insert({

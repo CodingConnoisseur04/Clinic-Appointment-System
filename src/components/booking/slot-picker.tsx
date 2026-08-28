@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { formatTime12h } from "@/lib/utils";
 
 function toDateInput(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -59,11 +60,31 @@ export function SlotPicker({
     };
   }, [date, refreshKey]);
 
-  const slots = date ? slotsData : [];
+  // Filter out past time slots when the selected date is today.
+  const now = new Date();
+  const isToday =
+    date !== undefined &&
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const slots = date
+    ? isToday
+      ? slotsData.filter((t) => {
+          const [h, m] = t.split(":").map(Number);
+          return h * 60 + m > currentMinutes;
+        })
+      : slotsData
+    : [];
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <Calendar mode="single" selected={date} onSelect={onDateChange} />
+      <Calendar
+        mode="single"
+        selected={date}
+        onSelect={onDateChange}
+        disabled={{ before: new Date() }}
+      />
       {date && <p className="text-sm font-medium">{toDateInput(date)}</p>}
       {loading && (
         <p className="text-sm text-muted-foreground">Loading slots…</p>
@@ -82,7 +103,7 @@ export function SlotPicker({
               variant={selected === time ? "default" : "outline"}
               onClick={() => onSelect(time)}
             >
-              {time}
+              {formatTime12h(time)}
             </Button>
           ))}
         </div>
