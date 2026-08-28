@@ -21,6 +21,8 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 
 Receptionist UX patch committed on `feat/receptionist-improvements` — Completed badge, past-date/time blocking, 12h format, SMS report removed.
 
+**Sidebar navigation** — `feat/sidebar-navigation` branch. All three role dashboards (receptionist, doctor, patient) refactored to use shadcn Sidebar with collapsible mobile toggle. Tabs split into separate routes.
+
 Phase 9 built — awaiting human test (reset → seed-staff → `npx tsx scripts/test-phase9.ts`; manual browser tests per spec §5). No commit yet. Deployment is Phase 10 — spec must be named `phase-10-deployment.md`.
 
 ## Renumbering note (this update)

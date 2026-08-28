@@ -792,6 +792,55 @@ of the landing page at 375px in a real phone browser.
 - The old serif-fallback bug means all pre-Phase-9 screenshots showed
   non-Geist type; nothing to do, just context for anyone comparing old
   captures.
+
+---
+
+## Sidebar navigation refactor
+**Date:** 2026-08-28
+**Branch:** feat/sidebar-navigation
+
+### What was built
+- **Shared sidebar component** (`src/components/nav/sidebar-nav.tsx`) —
+  role-aware navigation using shadcn Sidebar primitives. Shows clinic
+  name, role label, and nav items with active-state highlighting.
+- **All three role dashboards refactored** to use sidebar navigation:
+  - Receptionist: 4 routes (Pending, Walk-in, Appointments, Reports)
+  - Doctor: 2 routes (Schedule, Availability)
+  - Patient: 2 routes (Book, My Appointments)
+- **Shared appointments hook** (`src/hooks/use-appointments.ts`) —
+  reusable data-fetching for the receptionist's appointment-dependent pages.
+- **Providers wrapper** (`src/components/providers.tsx`) — TooltipProvider
+  added to root layout for sidebar tooltip support.
+- **DashboardHeader updated** — SidebarTrigger added for mobile hamburger
+  toggle.
+- Old monolithic pages converted to redirects to the first sub-route.
+
+### Files touched
+- `src/components/nav/sidebar-nav.tsx` (new)
+- `src/components/providers.tsx` (new)
+- `src/components/dashboard-header.tsx` (SidebarTrigger)
+- `src/hooks/use-appointments.ts` (new)
+- `src/app/layout.tsx` (Providers wrapper)
+- `src/app/receptionist/layout.tsx` (SidebarProvider)
+- `src/app/receptionist/page.tsx` (redirect)
+- `src/app/receptionist/{pending,walk-in,appointments,reports}/page.tsx` (new)
+- `src/app/doctor/layout.tsx` (SidebarProvider)
+- `src/app/doctor/page.tsx` (redirect)
+- `src/app/doctor/{schedule,availability}/page.tsx` (new)
+- `src/app/patient/layout.tsx` (SidebarProvider)
+- `src/app/patient/page.tsx` (redirect)
+- `src/app/patient/{book,appointments}/page.tsx` (new)
+
+### Deviations from spec
+None — ad-hoc improvement outside any phase spec.
+
+### Lint fixes
+- `src/hooks/use-mobile.ts` — rewritten to avoid setState-in-effect lint
+  error (shadcn auto-generated hook). Initial state now uses a synchronous
+  function initializer instead of a setState call inside useEffect.
+- `src/app/doctor/schedule/page.tsx` — removed redundant setLoading(true)
+  inside effect.
+- `src/app/receptionist/pending/page.tsx` — removed unused imports.
 ## Uncommitted patch — Receptionist UX improvements
 **Date:** 2026-08-28
 **Branch:** feat/receptionist-improvements

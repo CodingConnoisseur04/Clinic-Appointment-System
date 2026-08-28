@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { requireRole } from "@/lib/auth/require-role";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { RoleSidebar } from "@/components/nav/sidebar-nav";
 
 export default async function ReceptionistLayout({
   children,
@@ -9,9 +11,12 @@ export default async function ReceptionistLayout({
 }) {
   const profile = await requireRole(["receptionist"]);
   return (
-    <div className="flex min-h-dvh flex-col">
-      <DashboardHeader name={profile.full_name} role={profile.role} />
-      <div className="flex flex-1 flex-col">{children}</div>
-    </div>
+    <SidebarProvider>
+      <RoleSidebar role="receptionist" />
+      <SidebarInset>
+        <DashboardHeader name={profile.full_name} role={profile.role} />
+        <div className="flex flex-1 flex-col p-6">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

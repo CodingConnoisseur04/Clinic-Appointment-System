@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CLINIC } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const ROLE_LABEL = {
   patient: "Patient",
@@ -36,6 +37,7 @@ export function DashboardHeader({
   return (
     <header className="flex items-center justify-between border-b bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-950 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
+        <SidebarTrigger className="md:hidden" />
         <span
           aria-hidden
           className="size-2 shrink-0 rounded-full bg-primary"
