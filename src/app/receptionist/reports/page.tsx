@@ -20,6 +20,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toDateInput } from "@/components/booking/slot-picker";
+import { Button } from "@/components/ui/button";
+import { downloadAppointmentCsv } from "@/lib/reports/download-csv";
+import { Download } from "lucide-react";
 
 function Stat({ label, value }: { label: string; value?: number | string }) {
   return (
@@ -41,6 +44,7 @@ export default function ReportsPage() {
   });
   const [noShow, setNoShow] = useState<NoShowReport>();
   const [summary, setSummary] = useState<AppointmentSummary>();
+  const [downloading, setDownloading] = useState(false);
 
   const reportRangeStr = useMemo(() => {
     if (!reportRange?.from || !reportRange?.to) return null;
@@ -94,6 +98,37 @@ export default function ReportsPage() {
         </Card>
 
         <div className="flex flex-col gap-4">
+          {reportRangeStr && (
+            <Card>
+              <CardContent className="flex items-center justify-between p-4">
+                <div>
+                  <p className="text-sm font-medium">Export data</p>
+                  <p className="text-xs text-muted-foreground">
+                    Download all appointments in the selected range as CSV
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={downloading}
+                  onClick={async () => {
+                    if (!reportRangeStr) return;
+                    setDownloading(true);
+                    try {
+                      await downloadAppointmentCsv(supabase, reportRangeStr);
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setDownloading(false);
+                    }
+                  }}
+                >
+                  <Download className="mr-1.5 size-4" aria-hidden="true" />
+                  {downloading ? "Downloading…" : "Download CSV"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Appointment summary</CardTitle>

@@ -6,7 +6,9 @@ import {
   Calendar,
   ClipboardList,
   FileText,
+  Home,
   LayoutDashboard,
+  Settings,
   UserPlus,
   Stethoscope,
   Clock,
@@ -31,10 +33,12 @@ type NavItem = {
 };
 
 const RECEPTIONIST_NAV: NavItem[] = [
+  { label: "Home", href: "/receptionist", icon: Home },
   { label: "Pending Requests", href: "/receptionist/pending", icon: ClipboardList },
   { label: "Walk-in Registration", href: "/receptionist/walk-in", icon: UserPlus },
   { label: "Appointments", href: "/receptionist/appointments", icon: Calendar },
   { label: "Reports", href: "/receptionist/reports", icon: FileText },
+  { label: "Settings", href: "/receptionist/settings", icon: Settings },
 ];
 
 const DOCTOR_NAV: NavItem[] = [

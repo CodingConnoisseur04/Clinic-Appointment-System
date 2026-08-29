@@ -17,6 +17,7 @@
  */
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getClinicSettings } from "@/lib/clinic-settings";
 import { CLINIC } from "@/lib/brand";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -87,11 +88,16 @@ function Pin({ className = "" }: { className?: string }) {
   );
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function LandingPage() {
   const supabase = await createClient();
-  const { data: availability } = await supabase
-    .from("doctor_availability")
-    .select("day_of_week, start_time, end_time, is_active");
+  const [{ data: availability }, clinicSettings] = await Promise.all([
+    supabase
+      .from("doctor_availability")
+      .select("day_of_week, start_time, end_time, is_active"),
+    getClinicSettings(supabase),
+  ]);
   const hours = formatHours((availability ?? []) as AvailabilityRow[]);
 
   return (
@@ -218,8 +224,7 @@ export default async function LandingPage() {
               <div className="flex items-start gap-3">
                 <p className="font-medium text-stone-800">Call us</p>
                 <p className="text-stone-600">
-                  {CLINIC.phone}
-                  <span className="ml-2 text-xs text-stone-400">(sample number)</span>
+                  {clinicSettings.receptionist_phone}
                 </p>
               </div>
               <p className="text-sm text-stone-500">
