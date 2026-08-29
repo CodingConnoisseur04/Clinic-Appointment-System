@@ -150,13 +150,23 @@ export default function WalkInPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Walk-in Registration</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Walk-in Registration
+        </h1>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
-        <Card>
+        <Card className="shadow-warm">
           <CardHeader>
-            <CardTitle>1. Patient</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-[var(--primary-foreground)]">
+                1
+              </span>
+              Patient
+            </CardTitle>
             <CardDescription>
               {wiExisting
                 ? "Existing record loaded — reuse, no duplicate."
@@ -216,9 +226,14 @@ export default function WalkInPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-warm">
           <CardHeader>
-            <CardTitle>2. Schedule</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-[var(--primary-foreground)]">
+                2
+              </span>
+              Schedule
+            </CardTitle>
             <CardDescription>Pick a date, then an open slot.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-3">
@@ -231,9 +246,14 @@ export default function WalkInPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-warm">
           <CardHeader>
-            <CardTitle>3. Confirm &amp; pay</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--gold)] text-xs font-bold text-[var(--gold-foreground)]">
+                3
+              </span>
+              Confirm &amp; pay
+            </CardTitle>
             <CardDescription>
               Walk-ins are confirmed immediately with payment.
             </CardDescription>
@@ -275,6 +295,7 @@ export default function WalkInPage() {
             <Button
               onClick={submitWalkin}
               disabled={wiSubmitting || !wiDate || !wiSlot || !wiFullName.trim()}
+              className="w-full"
             >
               {wiSubmitting ? "Booking…" : "Book & confirm"}
             </Button>

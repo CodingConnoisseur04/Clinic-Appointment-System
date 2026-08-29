@@ -57,10 +57,15 @@ export default function PatientAppointmentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">My Appointments</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          My Appointments
+        </h1>
       </header>
 
-      <Card>
+      <Card className="shadow-warm">
         <CardHeader>
           <CardTitle>My Appointments</CardTitle>
           <CardDescription>
@@ -96,10 +101,10 @@ export default function PatientAppointmentsPage() {
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                             row.status === "CONFIRMED"
-                              ? "bg-primary text-primary-foreground"
+                              ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                               : row.status === "PENDING"
-                                ? "bg-secondary text-secondary-foreground"
-                                : "bg-destructive text-destructive-foreground"
+                                ? "bg-[var(--secondary)] text-[var(--secondary-foreground)]"
+                                : "bg-[var(--destructive)] text-white"
                           }`}
                         >
                           {row.status}

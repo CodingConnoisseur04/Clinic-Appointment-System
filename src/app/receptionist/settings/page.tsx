@@ -59,10 +59,15 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Settings
+        </h1>
       </header>
 
-      <Card className="max-w-lg">
+      <Card className="max-w-lg shadow-warm">
         <CardHeader>
           <CardTitle>Contact Information</CardTitle>
           <CardDescription>

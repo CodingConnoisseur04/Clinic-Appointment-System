@@ -10,11 +10,10 @@ import { cn } from "@/lib/utils";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ClipboardList, Phone } from "lucide-react";
+import { ClipboardList, Phone, ArrowRight } from "lucide-react";
 import { formatTime12h } from "@/lib/utils";
 
 type Appointment = {
@@ -48,7 +47,12 @@ function DateSection({
   if (appointments.length === 0) {
     return (
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium text-muted-foreground" style={{ textWrap: "balance" }}>{label}</h3>
+        <h3
+          className="text-sm font-medium text-muted-foreground"
+          style={{ textWrap: "balance" }}
+        >
+          {label}
+        </h3>
         <p className="text-sm text-muted-foreground">No appointments.</p>
       </div>
     );
@@ -58,7 +62,7 @@ function DateSection({
       <h3 className="text-sm font-medium text-muted-foreground">{label}</h3>
       <div className="grid gap-3 sm:grid-cols-2">
         {appointments.map((appt) => (
-          <Card key={appt.id}>
+          <Card key={appt.id} className="shadow-warm">
             <CardContent className="flex flex-col gap-1.5 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">
@@ -148,7 +152,12 @@ export default function ReceptionistHomePage() {
     return (
       <div className="flex flex-col gap-6">
         <header>
-          <h1 className="text-2xl font-semibold tracking-tight">Home</h1>
+          <h1
+            className="text-2xl font-semibold tracking-tight"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            Home
+          </h1>
         </header>
         <p className="text-sm text-muted-foreground">Loading…</p>
       </div>
@@ -158,15 +167,23 @@ export default function ReceptionistHomePage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Home</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Home
+        </h1>
       </header>
 
       {/* Quick stats row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card>
+        <Card className="shadow-warm">
           <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-              <ClipboardList className="size-5 text-primary" aria-hidden="true" />
+            <div className="flex size-10 items-center justify-center rounded-lg bg-[var(--primary)]/10">
+              <ClipboardList
+                className="size-5 text-[var(--primary)]"
+                aria-hidden="true"
+              />
             </div>
             <div>
               <p className="text-2xl font-semibold">{pendingCount}</p>
@@ -177,10 +194,13 @@ export default function ReceptionistHomePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-warm">
           <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-              <Phone className="size-5 text-primary" aria-hidden="true" />
+            <div className="flex size-10 items-center justify-center rounded-lg bg-[var(--gold)]/10">
+              <Phone
+                className="size-5 text-[var(--gold)]"
+                aria-hidden="true"
+              />
             </div>
             <div>
               <p className="text-sm font-semibold">Receptionist contact</p>
@@ -192,7 +212,7 @@ export default function ReceptionistHomePage() {
         </Card>
 
         {pendingCount > 0 && (
-          <Card className="sm:col-span-2 lg:col-span-1">
+          <Card className="shadow-warm sm:col-span-2 lg:col-span-1">
             <CardContent className="flex items-center justify-between p-4">
               <div>
                 <p className="text-sm font-medium">
@@ -205,9 +225,13 @@ export default function ReceptionistHomePage() {
               </div>
               <Link
                 href="/receptionist/pending"
-                className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+                className={cn(
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  "gap-1.5"
+                )}
               >
                 Review
+                <ArrowRight className="size-3.5" aria-hidden="true" />
               </Link>
             </CardContent>
           </Card>

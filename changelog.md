@@ -946,3 +946,92 @@ Applied to all new/changed files. Fixes made:
 - `db reset` wipes auth users; re-seed with `npx tsx scripts/seed-staff.ts`
 - `CLINIC.phone` in `brand.ts` is now unused by the app but still exists;
   can be removed in a future cleanup.
+
+---
+
+## Design revamp — "Warm Confidence" visual world
+**Date:** 2026-08-29
+**Branch:** design-revamp
+
+### What was built
+
+Full visual redesign of every page and the design system, replacing the
+incumbent look with a bold, distinctive "Warm Confidence" direction.
+
+**Design system:**
+- New color palette: deep forest green primary (#1a5c3a), warm gold accent
+  (#b8860b), warm cream background (#faf8f2), warm white cards, warm stone
+  secondaries
+- New typography: DM Serif Display for headings (personality + warmth),
+  Geist for body (clarity), Geist Mono for code/data
+- Updated CSS variables (light + dark modes) for all shadcn tokens
+- New utility classes: `.shadow-warm`, `.shadow-warm-lg`, `.page-enter`,
+  `.pin-notice`
+- Gold accent color added as `--gold` token
+
+**Landing page:**
+- Kept community board concept, pushed into bolder direction
+- Gold pin accents replace primary-colored pins
+- DM Serif Display headings
+- Warm shadows (`.shadow-warm-lg` on board, `.shadow-warm` on notices)
+- Rounded-xl on cards (up from rounded-lg)
+
+**Auth pages (login, signup):**
+- Warm cream background (`var(--background)`) replaces `bg-zinc-50`
+- Centered card with `shadow-warm`
+- DM Serif Display heading ("Welcome back" / "Create your account")
+- Forest green primary button with `w-full`
+- Gold hover state on links
+- Page-enter animation
+- Placeholders added for better form UX
+
+**Dashboard shell:**
+- Sidebar: gold logo accent (replaces primary), DM Serif Display for
+  clinic name, role label with reduced opacity
+- Header: backdrop-blur-sm, gold dot accent, LogOut icon, ghost sign-out
+  button
+- Layouts: page-enter animation on content area
+
+**Receptionist pages:**
+- Home: gold accent on phone icon, warm shadows, arrow icon on Review button
+- Pending: warm card shadows, payment reference placeholder
+- Walk-in: numbered step indicators (1/2/3) with green/gold accent circles,
+  full-width Book & confirm button
+- Appointments: warm shadows on main card
+- Reports: warm card shadows on stat cards, DM Serif Display for stat
+  values, tabular-nums
+- Settings: warm shadow, gold save button (inherited from primary)
+
+**Patient pages:**
+- Book: warm card shadow, improved success banner (rounded-xl)
+- Appointments: warm shadow, status badges using new palette tokens
+
+**Doctor pages:**
+- Schedule: warm card shadow
+- Availability: warm card shadows, numbered step indicators
+
+### Files touched
+- `src/app/globals.css` — complete token rewrite
+- `src/app/layout.tsx` — added DM Serif Display font
+- `src/app/page.tsx` — redesigned landing
+- `src/app/login/page.tsx` — redesigned
+- `src/app/signup/page.tsx` — redesigned
+- `src/components/dashboard-header.tsx` — redesigned
+- `src/components/nav/sidebar-nav.tsx` — redesigned
+- `src/app/{patient,receptionist,doctor}/layout.tsx` — added page-enter
+- `src/app/receptionist/{page,pending,walk-in,appointments,reports,settings}/page.tsx` — redesigned
+- `src/app/patient/{book,appointments}/page.tsx` — redesigned
+- `src/app/doctor/{schedule,availability}/page.tsx` — redesigned
+
+### Deviations from spec
+None — ad-hoc design work outside any phase spec.
+
+### Build verification
+- TypeScript compiles clean (`tsc --noEmit`)
+- Next.js build succeeds (all routes compile)
+
+### Design documentation
+- `DESIGN.md` created at project root — full visual system documentation
+  with YAML frontmatter tokens, 8 canonical sections, named rules
+- `.impeccable/design.json` sidecar created — tonal ramps, shadow/motion
+  tokens, component HTML/CSS snippets for the live panel

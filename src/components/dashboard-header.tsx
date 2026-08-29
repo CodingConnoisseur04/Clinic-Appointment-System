@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CLINIC } from "@/lib/brand";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { LogOut } from "lucide-react";
 
 const ROLE_LABEL = {
   patient: "Patient",
@@ -35,31 +36,35 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="flex items-center justify-between border-b bg-white px-4 py-3 dark:border-stone-800 dark:bg-stone-950 sm:px-6">
+    <header className="flex items-center justify-between border-b border-[var(--border)] bg-white/80 backdrop-blur-sm px-4 py-3 sm:px-6">
       <div className="flex min-w-0 items-center gap-3">
         <SidebarTrigger className="md:hidden" />
         <span
           aria-hidden
-          className="size-2 shrink-0 rounded-full bg-primary"
+          className="size-2 shrink-0 rounded-full bg-[var(--gold)]"
         />
-        <p className="truncate text-sm font-semibold tracking-tight">
+        <p
+          className="truncate text-sm font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
           {CLINIC.name}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
-        <p className="hidden text-sm text-stone-500 sm:block">
+        <p className="hidden text-sm text-muted-foreground sm:block">
           {name || ROLE_LABEL[role]} · {ROLE_LABEL[role]}
         </p>
-        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-amber-800 sm:hidden">
+        <span className="rounded-full bg-[var(--primary)]/10 px-2.5 py-0.5 text-xs font-medium text-[var(--primary)] sm:hidden">
           {ROLE_LABEL[role]}
         </span>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={signOut}
           disabled={signingOut}
-          className="min-h-9"
+          className="min-h-9 gap-1.5 text-muted-foreground hover:text-[var(--foreground)]"
         >
+          <LogOut className="size-3.5" aria-hidden="true" />
           {signingOut ? "Signing out…" : "Sign out"}
         </Button>
       </div>

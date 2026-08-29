@@ -1,16 +1,16 @@
 /*
- * DESIGN CONTRACT — seed 09cf66dd (dealt lead, locked: "Neighborhood Bulletin Board")
+ * DESIGN CONTRACT — "Warm Confidence" visual world
  * THESIS: the clinic's front wall as a friendly community board; refuses the
  *   brochure-band hero-carousel default.
- * OWN-WORLD: warm linen ground, ink text, one golden-amber accent, white
- *   pinned notices with offset+blur shadows and a single settle motion.
+ * OWN-WORLD: warm cream ground, forest green headers, gold pin accents,
+ *   white pinned notices with offset+blur shadows and a single settle motion.
  * STORY: visitor sees services, hours and the doctor at a glance, believes
  *   this is a real local clinic, clicks Log In or Sign Up.
  * FIRST VIEWPORT: header band (name, tagline, Log In / Sign Up) over three
  *   pinned notices — Services left, Hours center, Doctor right; location
  *   slip full-width at the foot of the board. Mobile: notices stack in
  *   reading order.
- * FORM: dealt lead index 5 of 7 grounded structures, surface scope, persuade.
+ * FORM: persuade mode — earn trust, show the real clinic, drive sign-up.
  * FINISH: unreviewed and undocumented is unfinished; this build ends with the
  *   finish review, the verdict, DESIGN.md, and every shipping raster carrying
  *   its provenance.
@@ -79,11 +79,11 @@ function formatHours(rows: AvailabilityRow[]): string[] {
   return out.length > 0 ? out : ["Hours not posted yet"];
 }
 
-function Pin({ className = "" }: { className?: string }) {
+function GoldPin({ className = "" }: { className?: string }) {
   return (
     <span
       aria-hidden
-      className={`absolute left-1/2 top-0 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary ring-2 ring-primary/30 ${className}`}
+      className={`absolute left-1/2 top-0 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--gold)] ring-2 ring-[var(--gold)]/30 ${className}`}
     />
   );
 }
@@ -101,19 +101,22 @@ export default async function LandingPage() {
   const hours = formatHours((availability ?? []) as AvailabilityRow[]);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#faf9f5] text-stone-900">
+    <div className="flex min-h-dvh flex-col bg-[var(--background)] text-[var(--foreground)]">
       <div
         hidden
         dangerouslySetInnerHTML={{
           __html:
-            "<!-- DESIGN CONTRACT seed=09cf66dd THESIS: front-wall community board; refuses hero-carousel brochure bands. OWN-WORLD: warm linen ground, ink text, one golden-amber accent, pinned white notices with offset+blur shadows, single settle motion. STORY: visitor sees services, hours and doctor at a glance, trusts this is a real local clinic, clicks Log In or Sign Up. FIRST VIEWPORT: header band with name/tagline/CTAs over three pinned notices (Services, Hours, Doctor), location slip at foot; mobile stacks in reading order. FORM: dealt lead index 5, seed 09cf66dd. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance. -->",
+            '<!-- DESIGN CONTRACT seed=design-revamp THESIS: front-wall community board; refuses hero-carousel brochure bands. OWN-WORLD: warm cream ground, forest green headers, gold pin accents, pinned white notices with offset+blur shadows, single settle motion. STORY: visitor sees services, hours and doctor at a glance, trusts this is a real local clinic, clicks Log In or Sign Up. FIRST VIEWPORT: header band with name/tagline/CTAs over three pinned notices (Services, Hours, Doctor), location slip at foot; mobile stacks in reading order. FORM: persuade mode. FINISH: unreviewed and undocumented is unfinished. -->',
         }}
       />
 
       {/* Header band */}
-      <header className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-10 sm:px-6 md:flex-row md:items-end md:justify-between">
+      <header className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-12 sm:px-6 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1
+            className="text-balance text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
             {CLINIC.name}
           </h1>
           <p className="mt-3 max-w-prose text-lg text-stone-600">
@@ -144,21 +147,25 @@ export default async function LandingPage() {
 
       {/* The board */}
       <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-4 pb-10 sm:px-6">
-        <div className="grid w-full grid-cols-1 gap-8 rounded-2xl border border-stone-200/80 bg-[#f3f1e9] p-5 shadow-[0_1px_2px_rgb(28_25_23/0.06),0_8px_24px_-8px_rgb(28_25_23/0.15)] sm:p-8 lg:grid-cols-3">
+        <div className="grid w-full grid-cols-1 gap-8 rounded-2xl border border-stone-200/80 bg-[#f3f1e9] p-5 shadow-warm-lg sm:p-8 lg:grid-cols-3">
           {/* Services */}
           <section
-            className="pin-notice relative mt-3 rounded-lg bg-white p-6 shadow-[0_2px_4px_rgb(28_25_23/0.08),0_12px_20px_-6px_rgb(28_25_23/0.18)] lg:-rotate-[0.6deg]"
+            className="pin-notice relative mt-3 rounded-xl bg-white p-6 shadow-warm lg:-rotate-[0.6deg]"
             style={{ animationDelay: "80ms" }}
             aria-labelledby="services-heading"
           >
-            <Pin />
-            <h2 id="services-heading" className="text-xl font-semibold tracking-tight">
+            <GoldPin />
+            <h2
+              id="services-heading"
+              className="text-xl font-semibold tracking-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
               What we treat
             </h2>
             <ul className="mt-4 space-y-2.5">
               {CLINIC.services.map((service) => (
                 <li key={service} className="flex items-start gap-2 text-stone-700">
-                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-amber-600" />
+                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-[var(--gold)]" />
                   {service}
                 </li>
               ))}
@@ -167,12 +174,16 @@ export default async function LandingPage() {
 
           {/* Hours */}
           <section
-            className="pin-notice relative mt-3 rounded-lg bg-white p-6 shadow-[0_2px_4px_rgb(28_25_23/0.08),0_12px_20px_-6px_rgb(28_25_23/0.18)]"
+            className="pin-notice relative mt-3 rounded-xl bg-white p-6 shadow-warm"
             style={{ animationDelay: "160ms" }}
             aria-labelledby="hours-heading"
           >
-            <Pin />
-            <h2 id="hours-heading" className="text-xl font-semibold tracking-tight">
+            <GoldPin />
+            <h2
+              id="hours-heading"
+              className="text-xl font-semibold tracking-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
               Clinic hours
             </h2>
             <dl className="mt-4 space-y-2.5 tabular-nums">
@@ -190,15 +201,19 @@ export default async function LandingPage() {
 
           {/* Doctor */}
           <section
-            className="pin-notice relative mt-3 rounded-lg bg-white p-6 shadow-[0_2px_4px_rgb(28_25_23/0.08),0_12px_20px_-6px_rgb(28_25_23/0.18)] lg:rotate-[0.5deg]"
+            className="pin-notice relative mt-3 rounded-xl bg-white p-6 shadow-warm lg:rotate-[0.5deg]"
             style={{ animationDelay: "240ms" }}
             aria-labelledby="doctor-heading"
           >
-            <Pin />
-            <h2 id="doctor-heading" className="text-xl font-semibold tracking-tight">
+            <GoldPin />
+            <h2
+              id="doctor-heading"
+              className="text-xl font-semibold tracking-tight"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
               Your doctor
             </h2>
-            <p className="mt-4 font-semibold text-amber-800">{CLINIC.doctorName}</p>
+            <p className="mt-4 font-semibold text-[var(--gold)]">{CLINIC.doctorName}</p>
             <p className="text-sm text-stone-500">{CLINIC.doctorSpecialty}</p>
             <p className="mt-4 text-stone-700">
               Every appointment is with the same physician who knows your
@@ -209,7 +224,7 @@ export default async function LandingPage() {
 
           {/* Location slip */}
           <section
-            className="pin-notice relative rounded-lg bg-white p-6 shadow-[0_2px_4px_rgb(28_25_23/0.08),0_12px_20px_-6px_rgb(28_25_23/0.18)] lg:col-span-3"
+            className="pin-notice relative rounded-xl bg-white p-6 shadow-warm lg:col-span-3"
             style={{ animationDelay: "320ms" }}
             aria-labelledby="location-heading"
           >

@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-29T00:00:00Z",
+  "title": "Design System: Golden Friendship Family Clinic",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Forest Green",
+        "canonical": "#1a5c3a",
+        "tonalRamp": ["#0d2e1c", "#143d28", "#1a5c3a", "#2d8a56", "#4aad72", "#7ecf9a", "#b8e5c8", "#e0f5e8"]
+      },
+      "gold": {
+        "role": "accent",
+        "displayName": "Warm Gold",
+        "canonical": "#b8860b",
+        "tonalRamp": ["#5c4306", "#8a650a", "#b8860b", "#d4a843", "#e0be6a", "#ebd496", "#f3e6bf", "#faf3e2"]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Warm Cream",
+        "canonical": "#faf8f2",
+        "tonalRamp": ["#e8e4dc", "#ece8e0", "#f0ece4", "#f4f0e8", "#faf8f2", "#fcfbf8", "#fdfcf9", "#fefefe"]
+      },
+      "sidebar": {
+        "role": "neutral",
+        "displayName": "Deep Forest",
+        "canonical": "#1a3a28",
+        "tonalRamp": ["#0d1d14", "#132b1e", "#1a3a28", "#245038", "#2d5a3f", "#3a7a55", "#5a9a75", "#8ac4a5"]
+      },
+      "destructive": {
+        "role": "destructive",
+        "displayName": "Warm Red",
+        "canonical": "#c0392b",
+        "tonalRamp": ["#601c15", "#902a20", "#c0392b", "#d4524a", "#e07a72", "#eca8a2", "#f4ccc8", "#fae8e6"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page-level headings only. DM Serif Display via var(--font-heading)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All body text, descriptions, form labels, navigation items."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Code, data values, tabular numbers."
+      }
+    },
+    "shadows": [
+      {
+        "name": "warm",
+        "value": "0 1px 3px oklch(0.2 0.02 80 / 0.06), 0 4px 12px oklch(0.2 0.02 80 / 0.08)",
+        "purpose": "Standard card elevation. Used on every Card component."
+      },
+      {
+        "name": "warm-lg",
+        "value": "0 2px 6px oklch(0.2 0.02 80 / 0.06), 0 8px 24px oklch(0.2 0.02 80 / 0.12)",
+        "purpose": "Elevated surfaces. Landing page board, dialogs."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Primary easing for settle and page-enter animations."
+      },
+      {
+        "name": "pin-settle",
+        "value": "0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "purpose": "Landing page pinned notices drop onto the board."
+      },
+      {
+        "name": "page-enter",
+        "value": "0.4s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "purpose": "Route transition fade-in for dashboard content areas."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action button. Forest green background, cream text, rounded-lg.",
+      "html": "<button class=\"ds-btn-primary\">Sign in</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #1a5c3a; color: #faf8f2; padding: 8px 16px; border-radius: 6.25px; font-family: Geist, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; border: none; cursor: pointer; transition: background 0.15s, opacity 0.15s; min-height: 40px; } .ds-btn-primary:hover { background: #164d30; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.55 0.15 155 / 0.3); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action. Transparent with border, foreground text.",
+      "html": "<button class=\"ds-btn-outline\">Log in</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: transparent; color: #1c1917; padding: 8px 16px; border-radius: 6.25px; font-family: Geist, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; border: 1px solid #e7e2d9; cursor: pointer; transition: background 0.15s, border-color 0.15s; min-height: 40px; } .ds-btn-outline:hover { background: #f0ece4; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.55 0.15 155 / 0.3); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text input with warm border, focus ring in green.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Enter your name\" />",
+      "css": ".ds-input { display: block; width: 100%; padding: 8px 10px; border: 1px solid #e7e2d9; border-radius: 6.25px; background: transparent; color: #1c1917; font-family: Geist, system-ui, sans-serif; font-size: 0.875rem; transition: border-color 0.15s, box-shadow 0.15s; min-height: 36px; } .ds-input::placeholder { color: #78716c; } .ds-input:focus { outline: none; border-color: #2d8a56; box-shadow: 0 0 0 3px oklch(0.55 0.15 155 / 0.15); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; background: #f0ece4; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White surface with warm shadow and rounded-xl corners.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><h3 class=\"ds-card-title\">Card Title</h3><p class=\"ds-card-description\">Description text goes here.</p></div><div class=\"ds-card-content\"><p>Card content.</p></div></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e7e2d9; border-radius: 8.75px; box-shadow: 0 1px 3px oklch(0.2 0.02 80 / 0.06), 0 4px 12px oklch(0.2 0.02 80 / 0.08); } .ds-card-header { padding: 24px 24px 0; } .ds-card-title { font-family: Geist, system-ui, sans-serif; font-size: 1rem; font-weight: 600; color: #1c1917; margin: 0; } .ds-card-description { font-size: 0.875rem; color: #78716c; margin: 4px 0 0; } .ds-card-content { padding: 16px 24px 24px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Pill-shaped status indicator. Green for confirmed, stone for pending, red for cancelled.",
+      "html": "<span class=\"ds-badge ds-badge-default\">CONFIRMED</span> <span class=\"ds-badge ds-badge-secondary\">PENDING</span> <span class=\"ds-badge ds-badge-destructive\">CANCELLED</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; line-height: 1.4; white-space: nowrap; } .ds-badge-default { background: #1a5c3a; color: #faf8f2; } .ds-badge-secondary { background: #f0ece4; color: #44403c; } .ds-badge-destructive { background: #c0392b; color: #ffffff; }"
+    },
+    {
+      "name": "Sidebar Navigation",
+      "kind": "nav",
+      "refersTo": "sidebar",
+      "description": "Deep forest green sidebar with gold logo badge, white navigation text, accent active state.",
+      "html": "<nav class=\"ds-sidebar\"><div class=\"ds-sidebar-logo\"><span class=\"ds-sidebar-logo-icon\">G</span><span class=\"ds-sidebar-logo-text\">Golden Friendship Family Clinic</span></div><a class=\"ds-sidebar-item ds-sidebar-item-active\" href=\"/receptionist\">Home</a><a class=\"ds-sidebar-item\" href=\"/receptionist/pending\">Pending Requests</a></nav>",
+      "css": ".ds-sidebar { background: #1a3a28; color: #e8e4dc; padding: 16px; width: 280px; display: flex; flex-direction: column; gap: 4px; } .ds-sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 8px; margin-bottom: 8px; } .ds-sidebar-logo-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #b8860b; color: #faf8f2; border-radius: 6.25px; font-weight: 700; font-size: 0.875rem; } .ds-sidebar-logo-text { font-family: 'DM Serif Display', Georgia, serif; font-size: 0.875rem; font-weight: 600; color: #e8e4dc; } .ds-sidebar-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6.25px; color: #e8e4dc; text-decoration: none; font-size: 0.875rem; transition: background 0.15s; } .ds-sidebar-item:hover { background: #245038; } .ds-sidebar-item-active { background: #245038; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Warm Confidence",
+    "overview": "A clinic scheduling interface that feels like walking into a trusted neighborhood practice — warm, grounded, and unmistakably real. The palette draws from the natural world of health and trust: deep forest greens that say 'this is a place of care,' warm golds that echo the clinic's name and the golden friendship it promises, and a cream ground that feels like sunlight on a well-kept waiting room.",
+    "keyCharacteristics": [
+      "Forest green primary anchors every action and navigation element",
+      "Warm gold accent appears sparingly — pins, icons, links — never overwhelming",
+      "Cream ground throughout, never pure white backgrounds",
+      "DM Serif Display for all headings — personality without decoration",
+      "Warm shadows with visible offset, never cold gray halos",
+      "Consistent shadow-warm utility across all card surfaces",
+      "Page-enter fade animation for route transitions"
+    ],
+    "rules": [
+      { "name": "The Gold Sparingly Rule", "body": "The gold accent appears on ≤5% of any given screen. Its rarity is the point.", "section": "colors" },
+      { "name": "The Warm Ground Rule", "body": "Every background is warm. Pure white is reserved for elevated surfaces that need to visually lift off the cream ground.", "section": "colors" },
+      { "name": "The Heading Font Rule", "body": "DM Serif Display is used ONLY via fontFamily: var(--font-heading) applied through inline style.", "section": "typography" },
+      { "name": "The Tabular Numbers Rule", "body": "All numeric data columns use tabular-nums for aligned digits.", "section": "typography" },
+      { "name": "The Warm Offset Rule", "body": "Every shadow carries a visible Y-offset. Cold, centered shadows read as software. Warm, offset shadows read as object.", "section": "elevation" },
+      { "name": "The Radius Consistency Rule", "body": "Cards use rounded-xl. Interactive controls use rounded-lg. Never mix.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do use fontFamily: var(--font-heading) via inline style for every page-level heading",
+      "Do use shadow-warm on every Card component",
+      "Do use tabular-nums on any element displaying numeric data",
+      "Do use the page-enter CSS class on layout content areas for smooth transitions",
+      "Do use the gold accent sparingly — one or two gold elements per screen maximum",
+      "Do use role=\"alert\" on error messages and role=\"status\" on success banners",
+      "Do include aria-hidden=\"true\" on all decorative icons"
+    ],
+    "donts": [
+      "Don't use pure white as a page background — the ground is always warm cream",
+      "Don't use gray shadows — all shadows use the warm oklch family",
+      "Don't use DM Serif Display in body text, labels, or navigation",
+      "Don't scatter gold accents across a page",
+      "Don't use rounded-full on cards or containers",
+      "Don't use transition: all on any element",
+      "Don't add kicker lines, eyebrow labels, or section numbers above headings",
+      "Don't use gradient text, glass effects, or decorative blur"
+    ]
+  }
+}

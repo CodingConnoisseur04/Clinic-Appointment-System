@@ -183,10 +183,15 @@ export default function AvailabilityPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Manage Availability</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Manage Availability
+        </h1>
       </header>
 
-      <Card>
+      <Card className="shadow-warm">
         <CardHeader>
           <CardTitle>Weekly working hours</CardTitle>
           <CardDescription>
@@ -263,7 +268,7 @@ export default function AvailabilityPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-warm">
         <CardHeader>
           <CardTitle>Closed dates</CardTitle>
           <CardDescription>

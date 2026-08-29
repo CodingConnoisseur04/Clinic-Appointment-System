@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";export default function BookPage() {
+import { Textarea } from "@/components/ui/textarea";
+export default function BookPage() {
   const supabase = createClient();
   const router = useRouter();
 
@@ -116,10 +117,15 @@ import { Textarea } from "@/components/ui/textarea";export default function Book
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Book an Appointment</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Book an Appointment
+        </h1>
       </header>
 
-      <Card>
+      <Card className="shadow-warm">
         <CardHeader>
           <CardTitle>Book an Appointment</CardTitle>
           <CardDescription>
@@ -131,7 +137,7 @@ import { Textarea } from "@/components/ui/textarea";export default function Book
         <CardContent>
           {submittedMsg && (
             <div
-              className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
+              className="mb-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
               role="status"
             >
               {submittedMsg}

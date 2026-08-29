@@ -19,6 +19,8 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 
 ## Current focus
 
+**Design revamp committed** on `design-revamp` branch (`0d7d6f1`). New "Warm Confidence" visual world: forest green primary, warm gold accent, DM Serif Display headings, cream ground. All 15 pages redesigned, DESIGN.md created, detector passes clean.
+
 Receptionist enhancements merged to main — home page, CSV reports, settings page, dynamic clinic phone from DB. Sidebar nav updated with Home + Settings links.
 
 Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named `phase-10-deployment.md`.

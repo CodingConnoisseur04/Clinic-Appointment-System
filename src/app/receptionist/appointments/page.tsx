@@ -70,10 +70,15 @@ export default function AppointmentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">All Appointments</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          All Appointments
+        </h1>
       </header>
 
-      <Card>
+      <Card className="shadow-warm">
         <CardHeader>
           <CardTitle>Appointments</CardTitle>
           <CardDescription>

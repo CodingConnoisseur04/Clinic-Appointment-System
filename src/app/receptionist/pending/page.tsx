@@ -64,10 +64,15 @@ export default function PendingPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Pending Requests</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Pending Requests
+        </h1>
       </header>
 
-      <Card>
+      <Card className="shadow-warm">
         <CardHeader>
           <CardTitle>Pending online requests</CardTitle>
           <CardDescription>
@@ -156,6 +161,7 @@ export default function PendingPage() {
                 id="confirm-ref"
                 value={confirmRef}
                 onChange={(e) => setConfirmRef(e.target.value)}
+                placeholder="e.g. receipt # / GCash ref"
               />
             </div>
           </div>

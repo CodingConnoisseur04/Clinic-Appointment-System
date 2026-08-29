@@ -67,12 +67,17 @@ export function RoleSidebar({ role }: { role: string }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link href={`/${role}`} />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[var(--gold)] text-[var(--gold-foreground)]">
                 <LayoutDashboard className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{CLINIC.name}</span>
-                <span className="truncate text-xs text-muted-foreground capitalize">
+                <span
+                  className="truncate font-semibold"
+                  style={{ fontFamily: "var(--font-heading)" }}
+                >
+                  {CLINIC.name}
+                </span>
+                <span className="truncate text-xs text-sidebar-accent-foreground/60 capitalize">
                   {role}
                 </span>
               </div>

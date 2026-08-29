@@ -26,9 +26,14 @@ import { Download } from "lucide-react";
 
 function Stat({ label, value }: { label: string; value?: number | string }) {
   return (
-    <div className="rounded-md border p-3">
-      <div className="text-2xl font-semibold">{value ?? "-"}</div>
-      <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4">
+      <div
+        className="text-2xl font-semibold tabular-nums"
+        style={{ fontFamily: "var(--font-heading)" }}
+      >
+        {value ?? "—"}
+      </div>
+      <div className="mt-0.5 text-xs text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -76,11 +81,16 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
+        <h1
+          className="text-2xl font-semibold tracking-tight"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          Reports
+        </h1>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        <Card>
+        <Card className="shadow-warm">
           <CardHeader>
             <CardTitle>Date range</CardTitle>
             <CardDescription>
@@ -99,7 +109,7 @@ export default function ReportsPage() {
 
         <div className="flex flex-col gap-4">
           {reportRangeStr && (
-            <Card>
+            <Card className="shadow-warm">
               <CardContent className="flex items-center justify-between p-4">
                 <div>
                   <p className="text-sm font-medium">Export data</p>
@@ -129,7 +139,7 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
           )}
-          <Card>
+          <Card className="shadow-warm">
             <CardHeader>
               <CardTitle>Appointment summary</CardTitle>
               <CardDescription>
@@ -145,7 +155,7 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-warm">
             <CardHeader>
               <CardTitle>No-show rate</CardTitle>
               <CardDescription>

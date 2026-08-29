@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -84,20 +83,25 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 p-8 dark:bg-black">
+    <div className="page-enter flex flex-1 flex-col items-center justify-center bg-[var(--background)] p-8">
       <Link
         href="/"
-        className="mb-6 text-sm text-stone-500 underline-offset-4 hover:text-amber-700 hover:underline"
+        className="mb-6 text-sm text-stone-500 underline-offset-4 hover:text-[var(--primary)] hover:underline"
       >
         ← Back to home
       </Link>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Create your account</CardTitle>
-          <CardDescription>
+      <Card className="w-full max-w-sm shadow-warm">
+        <CardHeader className="text-center">
+          <CardTitle
+            className="text-2xl"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            Create your account
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
             Register as a patient at {CLINIC.name} to request appointments
             online
-          </CardDescription>
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -110,6 +114,7 @@ export default function SignupPage() {
                 required
                 value={form.fullName}
                 onChange={set("fullName")}
+                placeholder="Juan dela Cruz"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -137,6 +142,7 @@ export default function SignupPage() {
                 required
                 value={form.email}
                 onChange={set("email")}
+                placeholder="you@example.com"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -149,20 +155,21 @@ export default function SignupPage() {
                 required
                 value={form.password}
                 onChange={set("password")}
+                placeholder="At least 8 characters"
               />
             </div>
             {error && (
-              <p className="text-sm text-destructive" role="alert">
+              <p className="text-sm text-[var(--destructive)]" role="alert">
                 {error}
               </p>
             )}
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting} className="w-full">
               {submitting ? "Creating account…" : "Sign up"}
             </Button>
           </form>
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-muted-foreground">
             Already registered?{" "}
-            <Link href="/login" className="underline underline-offset-2">
+            <Link href="/login" className="font-medium text-[var(--primary)] underline underline-offset-2 hover:text-[var(--gold)]">
               Sign in
             </Link>
           </p>
