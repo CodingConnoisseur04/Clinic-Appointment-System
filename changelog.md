@@ -887,3 +887,62 @@ None — these are ad-hoc improvements outside any phase spec.
   to be date-only (not datetime). Currently the date part of today is
   allowed (react-day-picker's `before` is date-granular, not
   datetime-granular), so this is fine — same-day slots remain bookable.
+
+---
+
+## Receptionist enhancements — home page, CSV reports, settings, dynamic phone
+**Date:** 2026-08-29
+**Branch:** feature/receptionist-enhancements (merged to main)
+
+### What was built
+1. **Home page** (`/receptionist`) — replaced the redirect to `/pending` with
+   a real dashboard showing:
+   - Today + tomorrow appointment cards in a 2-column grid (patient name,
+     time in 12h format, status badge, source, reason)
+   - Pending request count widget with a "Review" link to `/pending`
+   - Receptionist contact phone number card (read from `clinic_settings`)
+2. **Settings page** (`/receptionist/settings`) — receptionist can configure
+   the clinic phone number. Stored in a new `clinic_settings` table
+   (key-value). Phone type input with `tel` inputmode.
+3. **CSV download on reports** — "Download CSV" button fetches all
+   appointments in the selected date range and generates a downloadable CSV
+   file (patient name, phone, source, status, reason, attendance, payment).
+4. **Dynamic clinic phone** — landing page (`/`) and receptionist home page
+   both read the phone number from `clinic_settings` instead of the
+   hardcoded `CLINIC.phone` in `brand.ts`. `export const dynamic =
+   "force-dynamic"` on the landing page to disable server-component caching.
+5. **Sidebar nav updated** — added "Home" and "Settings" links to the
+   receptionist sidebar.
+
+### Database changes
+- New migration `20260829000000_clinic_settings.sql`:
+  - `clinic_settings` table (key TEXT PK, value TEXT NOT NULL)
+  - Seeded with `receptionist_phone: "(088) 000-0000"`
+  - RLS enabled: anon SELECT, authenticated SELECT, receptionist INSERT/
+    UPDATE/DELETE (via `get_my_role()`)
+  - Explicit GRANTs for `anon` (SELECT) and `authenticated` (CRUD)
+
+### Files touched
+- `supabase/migrations/20260829000000_clinic_settings.sql` (new)
+- `src/lib/clinic-settings.ts` (new — `getClinicSettings`, `upsertClinicSetting`)
+- `src/lib/reports/download-csv.ts` (new — CSV generation)
+- `src/app/receptionist/page.tsx` (rewritten — home dashboard)
+- `src/app/receptionist/settings/page.tsx` (new)
+- `src/app/receptionist/reports/page.tsx` (CSV download card added)
+- `src/app/page.tsx` (phone from DB, `dynamic = "force-dynamic"`)
+- `src/components/nav/sidebar-nav.tsx` (Home + Settings links)
+
+### Deviations from spec
+None — ad-hoc improvement outside any phase spec.
+
+### Web Interface Guidelines review
+Applied to all new/changed files. Fixes made:
+- `type="tel"`, `inputMode="tel"`, `autoComplete="tel"`, `name` on phone input
+- `aria-hidden="true"` on decorative icons (ClipboardList, Phone, Download)
+- Title Case for button labels ("Save Settings", "Pending Requests")
+- `text-wrap: balance` on section headings
+
+### Known issues / follow-ups
+- `db reset` wipes auth users; re-seed with `npx tsx scripts/seed-staff.ts`
+- `CLINIC.phone` in `brand.ts` is now unused by the app but still exists;
+  can be removed in a future cleanup.
