@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+import { resetTestState } from "./test-support";
 import { createAppointment } from "@/lib/booking/create-appointment";
 import {
   confirmAppointment,
@@ -115,6 +117,9 @@ const THU = "2026-10-08";
 const PW = "test-password-123";
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // ---- Setup: two patient accounts with their own patients rows ----------
   const pA = await sessionFor("p4-a@test.local", PW);
   const pB = await sessionFor("p4-b@test.local", PW);

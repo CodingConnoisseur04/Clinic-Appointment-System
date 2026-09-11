@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+import { resetTestState } from "./test-support";
 import { sendSms } from "@/lib/sms/send-sms";
 import { sendConfirmationSms } from "@/lib/sms/send-confirmation";
 import { createAppointment } from "@/lib/booking/create-appointment";
@@ -105,6 +107,9 @@ function dateOffset(days: number): string {
 }
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // ---- Test 1: dry-run sendSms succeeds with NO network call ---------------
   const netCalls: string[] = [];
   const t1 = await sendSms(

@@ -15,7 +15,9 @@ export default async function ReceptionistLayout({
       <RoleSidebar role="receptionist" />
       <SidebarInset>
         <DashboardHeader name={profile.full_name} role={profile.role} />
-        <div className="page-enter flex flex-1 flex-col p-6">{children}</div>
+        <div className="page-enter flex flex-1 flex-col gap-6 p-4 sm:p-6">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

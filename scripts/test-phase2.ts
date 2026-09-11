@@ -5,6 +5,8 @@ import {
   type SupabaseClient,
 } from "@supabase/supabase-js";
 
+import { resetTestState } from "./test-support";
+
 function loadEnvLocal() {
   let file: string;
   try {
@@ -69,6 +71,9 @@ const PW = "test-password-123";
 type ApptRow = { id: string; status: string };
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // ---- Tests 1 & 2: public signup role assignment -------------------------
   const pA = await getOrCreateSession("patient-a@test.local", PW, {
     full_name: "Patient A",

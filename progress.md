@@ -11,19 +11,50 @@ For details on what happened in a phase, see changelog.md.
 | 4 | Receptionist flow | Closed | /specs/phase-4-receptionist-flow.md | Automated + manual tests pass; committed |
 | 5 | Patient booking flow | Closed | /specs/phase-5-patient-booking-flow.md | Automated + manual tests pass (incl. full-stack round-trip); committed |
 | 6 | Doctor schedule view | Closed | /specs/phase-6-doctor-schedule-availability.md | Automated + manual tests pass; committed |
-| 7 | Semaphore SMS | Closed | /specs/phase-7-semaphore-sms.md | Automated + manual tests pass (incl. real send); dual-session hardening committed || 8 | Reports | Closed | /specs/phase-8-reports.md | Automated + manual tests pass; committed |
-| 9 | Landing, branding & logout | Built — awaiting test | /specs/phase-9-landing-branding-logout.md | Harness 3/3 + regressions clean; mobile fix pass done; manual tests 4-10 pending (human) || 9 | Remote deployment & production readiness | Not started | /specs/phase-9-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live |
+| 7 | Semaphore SMS | Closed | /specs/phase-7-semaphore-sms.md | Automated + manual tests pass (incl. real send); dual-session hardening committed |
+| 8 | Reports | Closed | /specs/phase-8-reports.md | Automated + manual tests pass; committed |
+| 9 | Landing, branding & logout | Built — awaiting test | /specs/phase-9-landing-branding-logout.md | Harness 3/3 + regressions clean; mobile fix pass done; manual tests 4-10 pending (human) |
+| 10 | Remote deployment & production readiness | Not started | /specs/phase-10-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live. Row corrected from `phase-9-deployment.md` to match this file's own note below that deployment is Phase 10. |
 
 **Status values:** Not started → Planning (Claude Chat) → Plan mode (OpenCode) →
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
 ## Current focus
 
-**Design revamp committed** on `design-revamp` branch (`0d7d6f1`). New "Warm Confidence" visual world: forest green primary, warm gold accent, DM Serif Display headings, cream ground. All 15 pages redesigned, DESIGN.md created, detector passes clean.
+**Design pass 2 — "Warm Confidence" deepened: Built — awaiting test.** Not a
+phase and has no spec; see `changelog.md` → "Design pass 2". All 13 rendered
+routes rebuilt as one system on the existing palette rather than a new one.
 
-Receptionist enhancements merged to main — home page, CSV reports, settings page, dynamic clinic phone from DB. Sidebar nav updated with Home + Settings links.
+- The palette now **owns regions** instead of scattering accents: a deep forest
+  field (`--field`, a darker step of the existing primary ramp) carries the
+  public hero, the auth panel and every page masthead; cream ground carries the
+  records.
+- **Gold got a rule.** It marks time, money, and the next thing that matters —
+  a `PENDING` state, the current step, a payment reference, the count that needs
+  acting on. Nothing decorative.
+- **A real type scale**, including the missing middle register, and a mono data
+  layer: every time, date, count, phone and payment reference is Geist Mono with
+  tabular figures. Geist Mono had been loaded and unused since Phase 1.
+- **New shared vocabulary:** `PageMasthead`, `Ledger`, `StatusMark`, `StepRail`,
+  `ProportionBar`, `EmptyState`, `ClinicSeal`. Task-shaped pages replaced the
+  one-template-eight-times pattern.
+- **Mobile hydration bug fixed** (`use-mobile.ts`), plus dark toasts on a
+  light-only app (`sonner.tsx`).
 
-Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named `phase-10-deployment.md`.
+Verification: build clean, lint clean (0 warnings), detector 0 findings, and
+`node scripts/screenshot-review.mjs` **26/26** (13 routes × desktop + mobile;
+asserts HTTP status, no console/page errors, exactly one `h1`, no stuck loading
+state, no wrong-role redirect).
+
+**Nobody has looked at the screenshots yet** — this session had no image
+viewing, so `.impeccable/review/*.png` (26 files, current) still needs human
+eyes. Three items also need a decision; they are listed under "Deviations from
+spec" and "Known issues" in the changelog, the two biggest being the public
+phone number (I hide it rather than print the placeholder) and whether to
+finally remove or wire up the unreachable dark mode.
+
+Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named
+`phase-10-deployment.md`.
 
 ## Renumbering note (this update)
 Auth + role-based access was missing from the original phase list entirely;

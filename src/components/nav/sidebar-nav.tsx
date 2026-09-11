@@ -7,7 +7,6 @@ import {
   ClipboardList,
   FileText,
   Home,
-  LayoutDashboard,
   Settings,
   UserPlus,
   Stethoscope,
@@ -24,6 +23,7 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { ClinicSeal } from "@/components/clinic-seal";
 import { CLINIC } from "@/lib/brand";
 
 type NavItem = {
@@ -32,77 +32,133 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-const RECEPTIONIST_NAV: NavItem[] = [
-  { label: "Home", href: "/receptionist", icon: Home },
-  { label: "Pending Requests", href: "/receptionist/pending", icon: ClipboardList },
-  { label: "Walk-in Registration", href: "/receptionist/walk-in", icon: UserPlus },
-  { label: "Appointments", href: "/receptionist/appointments", icon: Calendar },
-  { label: "Reports", href: "/receptionist/reports", icon: FileText },
-  { label: "Settings", href: "/receptionist/settings", icon: Settings },
+type NavSection = {
+  /** Tracked label above the group. Omitted for the primary group. */
+  heading?: string;
+  items: NavItem[];
+};
+
+const RECEPTIONIST_NAV: NavSection[] = [
+  {
+    items: [
+      { label: "Today's desk", href: "/receptionist", icon: Home },
+      { label: "Requests to action", href: "/receptionist/pending", icon: ClipboardList },
+      { label: "Register a walk-in", href: "/receptionist/walk-in", icon: UserPlus },
+    ],
+  },
+  {
+    heading: "Records",
+    items: [
+      { label: "All appointments", href: "/receptionist/appointments", icon: Calendar },
+      { label: "Reports", href: "/receptionist/reports", icon: FileText },
+    ],
+  },
+  {
+    heading: "Clinic",
+    items: [{ label: "Settings", href: "/receptionist/settings", icon: Settings }],
+  },
 ];
 
-const DOCTOR_NAV: NavItem[] = [
-  { label: "Schedule", href: "/doctor/schedule", icon: Stethoscope },
-  { label: "Manage Availability", href: "/doctor/availability", icon: Clock },
+const DOCTOR_NAV: NavSection[] = [
+  {
+    items: [
+      { label: "Your schedule", href: "/doctor/schedule", icon: Stethoscope },
+      { label: "Working hours", href: "/doctor/availability", icon: Clock },
+    ],
+  },
 ];
 
-const PATIENT_NAV: NavItem[] = [
-  { label: "Book Appointment", href: "/patient/book", icon: BookOpen },
-  { label: "My Appointments", href: "/patient/appointments", icon: ClipboardList },
+const PATIENT_NAV: NavSection[] = [
+  {
+    items: [
+      { label: "Book an appointment", href: "/patient/book", icon: BookOpen },
+      { label: "My appointments", href: "/patient/appointments", icon: ClipboardList },
+    ],
+  },
 ];
 
-const NAV_MAP: Record<string, NavItem[]> = {
+const NAV_MAP: Record<string, NavSection[]> = {
   receptionist: RECEPTIONIST_NAV,
   doctor: DOCTOR_NAV,
   patient: PATIENT_NAV,
 };
 
+const SCOPE_LABEL: Record<string, string> = {
+  receptionist: "Front desk",
+  doctor: "Consulting room",
+  patient: "Patient",
+};
+
 export function RoleSidebar({ role }: { role: string }) {
   const pathname = usePathname();
-  const items = NAV_MAP[role] ?? [];
+  const sections = NAV_MAP[role] ?? [];
 
   return (
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link href={`/${role}`} />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-[var(--gold)] text-[var(--gold-foreground)]">
-                <LayoutDashboard className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span
-                  className="truncate font-semibold"
-                  style={{ fontFamily: "var(--font-heading)" }}
-                >
+            <SidebarMenuButton
+              size="lg"
+              render={<Link href={`/${role}`} />}
+              className="gap-2.5"
+            >
+              <ClinicSeal />
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="font-heading truncate text-base text-sidebar-foreground">
                   {CLINIC.name}
                 </span>
-                <span className="truncate text-xs text-sidebar-accent-foreground/60 capitalize">
-                  {role}
+                <span className="text-meta text-sidebar-accent-foreground/55 uppercase">
+                  {SCOPE_LABEL[role] ?? role}
                 </span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarSeparator />
+
       <SidebarContent>
-        <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                isActive={pathname === item.href}
-                tooltip={item.label}
-                render={<Link href={item.href} />}
-              >
-                <item.icon className="size-4" />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+        {sections.map((section, index) => (
+          <div key={section.heading ?? `section-${index}`}>
+            {section.heading ? (
+              <p className="text-meta px-3 pt-4 pb-1.5 text-sidebar-accent-foreground/45 uppercase">
+                {section.heading}
+              </p>
+            ) : null}
+            <SidebarMenu className={section.heading ? undefined : "pt-2"}>
+              {section.items.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      isActive={active}
+                      tooltip={item.label}
+                      render={<Link href={item.href} />}
+                      /* Gold marks where you are standing. */
+                      className={
+                        active
+                          ? "relative before:absolute before:inset-y-1.5 before:-left-2 before:w-0.5 before:rounded-full before:bg-[var(--gold)]"
+                          : undefined
+                      }
+                    >
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </div>
+        ))}
       </SidebarContent>
-      <SidebarFooter />
+
+      <SidebarFooter>
+        <p className="text-meta px-3 pb-1 text-sidebar-accent-foreground/40 uppercase">
+          {CLINIC.address}
+        </p>
+      </SidebarFooter>
     </Sidebar>
   );
 }

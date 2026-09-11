@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+import { resetTestState } from "./test-support";
 import { getSchedule } from "@/lib/schedule/get-schedule";
 import { updateWorkingHours } from "@/lib/availability/update-hours";
 import {
@@ -96,6 +98,9 @@ const TUE = "2026-12-08";
 const PW = "test-password-123";
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // ---- Setup ---------------------------------------------------------------
   const doctor = anonClient();
   const rec = anonClient();

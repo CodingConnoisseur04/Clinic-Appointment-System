@@ -1,10 +1,14 @@
 ---
 name: Golden Friendship Family Clinic
-description: Warm, confident clinic scheduling interface with forest green and gold palette
+description: Warm, confident clinic interface — deep forest fields, warm cream ground, gold that carries meaning
 colors:
   primary: "#1a5c3a"
   primary-foreground: "#faf8f2"
+  field: "#143d28"
+  field-foreground: "#faf8f2"
+  field-muted: "#b9cfc1"
   gold: "#b8860b"
+  gold-ink: "#8a650a"
   gold-foreground: "#faf8f2"
   background: "#faf8f2"
   foreground: "#1c1917"
@@ -24,22 +28,58 @@ colors:
 typography:
   display:
     fontFamily: "DM Serif Display, Georgia, serif"
-    fontSize: "clamp(2.25rem, 5vw, 3.75rem)"
+    fontSize: "clamp(2.75rem, 7vw, 4.75rem)"
     fontWeight: 400
-    lineHeight: 1.15
+    lineHeight: 1.02
+    letterSpacing: "-0.03em"
+  title:
+    fontFamily: "DM Serif Display, Georgia, serif"
+    fontSize: "clamp(1.75rem, 3.2vw, 2.375rem)"
+    fontWeight: 400
+    lineHeight: 1.12
     letterSpacing: "-0.02em"
+  section:
+    fontFamily: "Geist, system-ui, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 600
+    lineHeight: 1.35
+  lead:
+    fontFamily: "Geist, system-ui, sans-serif"
+    fontSize: "1.0625rem"
+    fontWeight: 400
+    lineHeight: 1.6
   body:
     fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
-    lineHeight: 1.6
-    letterSpacing: "normal"
+    lineHeight: 1.65
   label:
     fontFamily: "Geist, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 500
     lineHeight: 1.4
-    letterSpacing: "normal"
+  meta:
+    fontFamily: "Geist, system-ui, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "0.13em"
+  data:
+    fontFamily: "Geist Mono, ui-monospace, monospace"
+    fontSize: "0.9375rem"
+    fontWeight: 500
+    lineHeight: 1.4
+  control:
+    fontFamily: "Geist, system-ui, sans-serif"
+    fontSize: "0.8rem"
+    fontWeight: 500
+    lineHeight: 1.4
+  stat-figure:
+    fontFamily: "DM Serif Display, Georgia, serif"
+    fontSize: "3.25rem"
+    fontWeight: 400
+    lineHeight: 1
+    letterSpacing: "-0.03em"
 rounded:
   sm: "4px"
   md: "5px"
@@ -59,11 +99,21 @@ components:
     textColor: "{colors.primary-foreground}"
     rounded: "{rounded.lg}"
     padding: "8px 16px"
-  button-outline:
-    backgroundColor: "transparent"
-    textColor: "{colors.foreground}"
+  button-field:
+    backgroundColor: "{colors.field-foreground}"
+    textColor: "{colors.field}"
     rounded: "{rounded.lg}"
     padding: "8px 16px"
+  mark:
+    border: "1px solid currentColor"
+    textColor: "status-dependent"
+    rounded: "{rounded.sm}"
+    padding: "2px 8px"
+  masthead:
+    backgroundColor: "{colors.field}"
+    textColor: "{colors.field-foreground}"
+    rounded: "{rounded.2xl}"
+    padding: "24px 28px"
   card:
     backgroundColor: "{colors.card}"
     textColor: "{colors.card-foreground}"
@@ -75,184 +125,174 @@ components:
 
 ## Overview
 
-**Creative North Star: "Warm Confidence"**
+**Creative North Star: "Warm Confidence", deepened — the clinic's front wall and its desk book.**
 
-A clinic scheduling interface that feels like walking into a trusted neighborhood practice — warm, grounded, and unmistakably real. The palette draws from the natural world of health and trust: deep forest greens that say "this is a place of care," warm golds that echo the clinic's name and the golden friendship it promises, and a cream ground that feels like sunlight on a well-kept waiting room. Nothing is cold, nothing is clinical in the sterile sense.
+The clinic has two real objects and the interface is built from both. Outward is the **front wall**: a deep forest field carrying the name, the hours, and the honest three-step flow, with a community board of pinned notices below it. Inward is the **desk book**: the ruled appointment ledger the front desk actually worked from before this app existed — a time running down the left gutter, records entered in reading order, states written down as inked marks rather than colored pills.
 
-The design refuses the generic SaaS look. No blue gradients, no floating cards on gray, no corporate sterility. Instead: warm shadows with visible offset, a serif display face that gives headings genuine personality, and a color system where every token earns its place through meaning (green = health, gold = warmth, cream = welcome). The landing page's community-board concept — pinned notices with gold pins, slight rotations, settle animations — sets the tone: this is a real place, not a software product pretending to be one.
+Two things changed in this pass, and they are what separate it from the earlier version:
 
-**Key Characteristics:**
-- Forest green primary anchors every action and navigation element
-- Warm gold accent appears sparingly — pins, icons, links — never overwhelming
-- Cream ground (`#faf8f2`) throughout, never pure white backgrounds
-- DM Serif Display for all headings — personality without decoration
-- Warm shadows with visible offset, never cold gray halos
-- Consistent `shadow-warm` utility across all card surfaces
-- Page-enter fade animation for route transitions
+1. **The palette now owns regions, not accents.** Previously every screen was a neutral cream ground with green and gold scattered over it as accents, which is exactly what makes an interface read as "a framework with a theme." Now the deep field (`#143d28`) is a material that owns whole areas — the public hero, the auth split, and every page's masthead — and the cream ground is what the records sit on.
+2. **The world reaches past the front door.** The landing page's board language previously stopped at the login screen; the interior was stock. Now the interior has its own translation of the same world and its own vocabulary — masthead, ledger, mark, step rail — used on all thirteen routes.
+
+It still refuses the generic SaaS look, and it now also refuses its own earlier timidity: no gray shadows, no backdrop blur, no decorative gradients, and no three-identical-cards dashboard.
+
+**Key Characteristics**
+- Two zones: a deep forest field for context and identity, a warm cream ground for records and forms
+- Gold carries information, never decoration (see *The Gold Has a Job Rule*)
+- Six type registers, including a mono data register for every figure the clinic reads off a screen
+- Ruled lines, a time gutter, and inked state marks — the desk book's vocabulary
+- Warm offset shadows; paper objects sit on a desk, they do not glow
+- Light only, deliberately: this is a daylight clinic with no dark rendition
 
 ## Colors
 
-The palette is restrained: one saturated primary, one warm accent, and a family of warm neutrals. Colors appear at page scale — fields that own whole regions — never as scattered accents over a neutral ground.
+**Strategy: Committed.** One saturated color carries 30–60% of each surface. The previous restrained strategy (neutrals plus one accent) is what made the app read as basic.
 
-### Primary
-- **Forest Green** (#1a5c3a): The authoritative color. Used on primary buttons, sidebar background, active navigation states, and status badges for CONFIRMED appointments. Conveys health, trust, and groundedness.
+### Primary — Forest Green `#1a5c3a`
+Actions, active states, confirmed records, focus. The authoritative color.
 
-### Accent
-- **Warm Gold** (#b8860b): The clinic's signature. Used sparingly — gold pin icons on the landing page, the sidebar logo badge, link hover states, doctor name highlighting, and the "3" step indicator on the walk-in form. Its rarity is its power.
+### Field — Deep Forest `#143d28`
+A sanctioned darker step of the primary ramp. Owns whole regions: the public hero, the auth split panel, every page masthead. On the field, secondary text uses **Field Muted** `#b9cfc1`, never a translucent white.
+
+### Accent — Warm Gold `#b8860b`
+The clinic's signature, and the color that carries meaning. For text-sized gold on cream, use **Gold Ink** `#8a650a` — the canonical gold does not hold contrast below 18px.
 
 ### Neutral
-- **Warm Cream** (#faf8f2): The ground. Every page background. Never pure white — always this warm, sunlit tone.
-- **Card White** (#ffffff): Card and popover backgrounds. Slightly warmer than system white due to the surrounding cream context.
-- **Warm Stone** (#f0ece4): Secondary backgrounds, muted sections, secondary buttons. The bridge between cream and card.
-- **Stone Border** (#e7e2d9): Dividers, input borders, card borders. Warm, not gray.
-- **Ink** (#1c1917): Primary text. Near-black with warmth, never pure #000.
-- **Muted Stone** (#78716c): Secondary text, labels, descriptions. Readable but quiet.
-
-### Sidebar
-- **Deep Forest** (#1a3a28): Sidebar background. Darker than primary, creating a clear navigation frame.
-- **Sidebar Gold** (#b8860b): Sidebar logo badge and active ring color.
-- **Sidebar Text** (#e8e4dc): Light text on the dark sidebar.
+- **Warm Cream `#faf8f2`** — the ground. Every page background. Never pure white.
+- **Card White `#ffffff`** — elevated paper: cards, dialogs, pinned notices.
+- **Warm Stone `#f0ece4`** / **Stone Border `#e7e2d9`** — secondary fills, rules, input borders.
+- **Ink `#1c1917`** — primary text, warm near-black.
+- **Muted Stone `#78716c`** — secondary text.
+- **Board Ground `#f3f1e9`** — the one slightly darker cream, used only for the landing board.
+- **Current Highlight `#fdf6e3`** — the fill behind the step you are standing on.
 
 ### Semantic
-- **Destructive** (#c0392b): CANCELLED status, delete/cancel actions. Warm red, not harsh.
-- **Ring** (#2d8a56): Focus rings. A lighter green that reads as "active" without being jarring.
-
-### Selection
-- **Green Tint** (oklch(0.55 0.15 155 / 0.25)): Text selection highlight. A translucent green tint that ties selections to the primary palette.
+- **Destructive `#c0392b`** — cancelled, no-show, failures. Warm red.
+- **Pending** is gold. **Confirmed** is primary. See the rule below.
 
 ### Named Rules
 
-**The Gold Sparingly Rule.** The gold accent appears on ≤5% of any given screen. Its rarity makes it meaningful — a gold pin, a gold link, a gold logo badge. When everything is gold, nothing is.
+**The Gold Has a Job Rule.** Gold marks *time, money, and the next thing that matters* — and nothing else. Concretely, gold is permitted on: the pins on the board; the step you are currently on; a `PENDING` state; input that is still a placeholder; a payment reference or money figure; the current day; the "still to come" or "needs attendance" count; and the hairline across a masthead. Gold on a decorative dot, a generic icon, or a bullet is a bug.
 
-**The Warm Ground Rule.** Every background is warm. Pure white (`#ffffff`) is reserved for elevated surfaces (cards, popovers, dialogs) that need to visually lift off the cream ground. The page background is never white.
+**The Two-Zone Rule.** Context and identity are set on the deep field. Records, forms, and anything a person reads for minutes at a time sit on cream. Never put a form on the field; never put a masthead on cream.
+
+**The Warm Ground Rule.** Page backgrounds are never pure white. White is reserved for paper that lifts off the cream.
 
 ## Typography
 
-**Display Font:** DM Serif Display (with Georgia, serif fallback)
-**Body Font:** Geist (with system-ui, sans-serif fallback)
-**Mono Font:** Geist Mono (for code and data)
+**Display:** DM Serif Display 400 · **Body:** Geist · **Data:** Geist Mono
 
-**Character:** The pairing is deliberate contrast — a warm, characterful serif for headings that says "this place has personality" against a clean, modern sans-serif for body text that says "this is easy to use." The serif never appears in body text; the sans never appears in headings. This separation makes every heading a visual event.
+The pairing is deliberate contrast, but the identity comes from *how* the three are used rather than from the faces themselves:
 
-### Hierarchy
-- **Display** (400 weight, `clamp(2.25rem, 5vw, 3.75rem)`, line-height 1.15): Page titles only. The clinic name on the landing page, section headings like "Book an Appointment." Always set in DM Serif Display via `fontFamily: "var(--font-heading)"`.
-- **Headline** (600 weight, 1.5rem, line-height 1.3): Card titles and section headers within pages. Set in Geist with semibold weight.
-- **Title** (600 weight, 1rem, line-height 1.4): Subsection headers, step labels ("1. Patient", "2. Schedule"). Set in Geist.
-- **Body** (400 weight, 1rem, line-height 1.6): All body text, descriptions, paragraphs. Max comfortable measure: 65–75ch.
-- **Label** (500 weight, 0.875rem, line-height 1.4): Form labels, navigation items, badges. Uppercase not used.
+- **The serif is the clinic's voice.** Only for the clinic's name, page titles (via `PageMasthead`), pinned-notice headings, and the one headline figure a report exists to give.
+- **Geist Mono is the operational data layer.** Every time, date, count, phone number, payment reference and percentage is set in mono with tabular figures. Nothing else is. This single rule is what makes the console read like a clinic's log book instead of a dashboard, and it lines figures up down a column for free.
+- **Geist carries everything else.**
+
+### Registers
+
+| Register | Size | Face | Job |
+|---|---|---|---|
+| `display` | `clamp(2.75rem, 7vw, 4.75rem)` | serif | The clinic's name on the public hero |
+| `title` | `clamp(1.75rem, 3.2vw, 2.375rem)` | serif | Every page title, inside the masthead |
+| `stat-figure` | `3.25rem` (unit `1.75rem`) | serif | The single number a report answers with |
+| `section` | `1.0625rem` | sans 600 | Card and block headings |
+| `lead` | `1.0625rem` | sans | The one explanatory sentence under a title |
+| `body` | `1rem` | sans | All prose, max 68ch |
+| `label` | `0.875rem` | sans 500 | Form labels, navigation |
+| `data` | `0.9375rem` | mono 500 | Times, dates, counts, refs, phones |
+| `meta` | `0.6875rem` tracked `0.13em` | sans 600 | Tracked uppercase field labels |
+| `control` | `0.8rem` | sans 500 | Small control text (buttons, calendar cells) |
+
+Body copy uses `text-xs` (0.75rem), `text-sm` (0.875rem), `text-base`, `text-xl` and `text-2xl` from the Tailwind scale where a register is not called for.
 
 ### Named Rules
 
-**The Heading Font Rule.** DM Serif Display is used ONLY for `fontFamily: "var(--font-heading)"` applied via inline style. It never appears in CSS utility classes or Tailwind config. This keeps the heading font intentional, not accidental.
+**The Single Weight Rule.** DM Serif Display ships one weight. Never apply `font-semibold`/`font-bold` to a serif heading — that is faux-bold, and it is the fastest way to make a display face look cheap. `.font-heading` sets `font-weight: 400` and `font-synthesis-weight: none` to make this structurally impossible.
 
-**The Tabular Numbers Rule.** All numeric data columns (time displays, stat values, appointment counts) use `tabular-nums` for aligned digits. The stats on the reports page and the clinic hours on the landing page both use this.
+**The Mono-For-Figures Rule.** If a value is a time, a date, a count, a percentage, a phone number, or a payment reference, it is `.figure` (Geist Mono, tabular, slashed zero). If it is prose, it is not.
+
+**The No Serif in Chrome Rule.** The serif never appears in navigation, buttons, badges, table headers, or body text. A card heading is `section`, not serif.
 
 ## Layout
 
-The layout is sidebar-driven for authenticated surfaces and single-column for public pages.
+**Public:** full-bleed bands. The hero is a deep field that fills the first viewport on desktop (`lg:min-h-[74svh]`); the board section follows on cream; a closing field band anchors the page.
 
-**Authenticated dashboards:** Fixed sidebar (280px desktop, collapsible on mobile) + content area with `p-6` padding. The sidebar uses the deep forest green background and contains navigation with gold logo accent. Content area has the cream background.
+**Auth:** a two-zone split above `lg` — field panel with identity beside a calm cream form column (`max-w-md`). Below `lg` the panel collapses to a compact header strip so the form is the first thing on screen.
 
-**Public pages (landing, login, signup):** Single centered column, max-width 600px for auth cards, max-width 1152px (6xl) for the landing board. Content is vertically centered in the viewport with `min-h-dvh`.
+**Authenticated:** fixed sidebar (16rem) + content area with `p-4 sm:p-6` and `gap-6`. Every page opens with its `PageMasthead`, then its content.
 
-**Responsive behavior:** Sidebar collapses to a hamburger trigger below `md` breakpoint. The landing page's 3-column board stacks to single column on mobile. Tables get horizontal scroll containers (`-mx-2 overflow-x-auto px-2`) on small screens.
+**Ledger rows:** `5.5rem 1fr` on mobile, `5.5rem 1fr auto` at `sm` and above — a fixed time gutter, the record, then actions.
 
-**Spacing rhythm:** Consistent `gap-6` (24px) between major sections. `gap-4` (16px) between cards in a grid. `gap-3` (12px) between form fields. More space above a heading than below it — headings have `mb` implicit through the gap structure.
+**Spacing rhythm:** `gap-6` between major blocks, `gap-4` between cards, `gap-3.5` between fields. More space above a heading than below it. Section headings inside a ledger use `mt-6`/`mt-8` above and `pb-2` below.
 
 ## Elevation & Depth
 
-The system uses warm shadows with visible offset — never cold gray, never zero-offset halos. Depth conveys hierarchy: the landing board sits highest, cards float above the ground, and the sidebar is a fixed frame.
+Warm shadows with a visible Y-offset. Cold, centered halos read as software; warm, offset ones read as objects on a desk.
 
-### Shadow Vocabulary
-- **shadow-warm** (`0 1px 3px oklch(0.2 0.02 80 / 0.06), 0 4px 12px oklch(0.2 0.02 80 / 0.08)`): Standard card elevation. Used on every Card component, stat boxes, and form containers.
-- **shadow-warm-lg** (`0 2px 6px oklch(0.2 0.02 80 / 0.06), 0 8px 24px oklch(0.2 0.02 80 / 0.12)`): Elevated surfaces. Used on the landing page's board container. Higher offset, softer blur.
-- **No shadow**: The sidebar, header, and inline content sections sit flat. Shadows are reserved for surfaces that need to "lift" off the ground.
+- **`shadow-warm`** (`0 1px 2px oklch(0.2 0.02 80 / 0.05), 0 4px 12px oklch(0.2 0.02 80 / 0.07)`) — standard paper: cards, toolbars, inline records.
+- **`shadow-warm-lg`** (`0 2px 6px / 0.06, 0 10px 28px / 0.13`) — the board container and every masthead.
+- **Flat** — ledger rows, the chrome bar, the sidebar, and anything that is part of the page rather than an object on it.
 
-### Named Rules
-
-**The Warm Offset Rule.** Every shadow carries a visible Y-offset (never 0). Cold, centered shadows read as "software." Warm, offset shadows read as "object." The offset is what makes the pinned notices on the landing page feel like they're sitting on a board.
+**No glass.** Backdrop blur is banned anywhere in the app; it was removed from the chrome bar in this pass. Depth comes from offset shadows and warm borders only.
 
 ## Shapes
 
-The form language is consistently rounded but never bubbly. Radii stay in the 6–16px range for cards and containers, 6.25px (the shadcn default `--radius`) for buttons, inputs, and smaller controls.
+Consistently rounded, never bubbly. Cards and elevated containers `rounded-xl` (8.75px); buttons, inputs and selects `rounded-lg` (6.25px); mastheads `rounded-2xl`; status marks are **not** pills — they are squared (`rounded-sm`) so they read as ink on paper rather than as tags.
 
-- **Cards and containers:** `rounded-xl` (8.75px) — warm and approachable without being pill-shaped.
-- **Buttons and inputs:** `rounded-lg` (6.25px) — the project's base radius, applied consistently.
-- **Stat boxes on reports:** `rounded-xl` (8.75px) — matching card radius for visual consistency.
-- **Badges:** `rounded-full` (pill) — status badges are always fully rounded.
-- **Sidebar logo badge:** `rounded-lg` (6.25px) — matches button radius.
-
-### Named Rules
-
-**The Radius Consistency Rule.** Cards and elevated containers use `rounded-xl`. Interactive controls (buttons, inputs, selects) use `rounded-lg` (the base radius). Never mix — a card with `rounded-lg` looks like a button; a button with `rounded-xl` looks like a card.
+**The Radius Consistency Rule.** Cards `rounded-xl`, controls `rounded-lg`. A card with a control's radius looks like a button; a button with a card's radius looks like a card.
 
 ## Components
 
+### PageMasthead
+Every page's identity carrier, and never the same twice because it carries that page's real context rather than a bare title. Deep field, `rounded-2xl`, a gold hairline drawing itself across the top (`rule-draw`), an optional tracked `meta` line above a serif `title`, an optional `lead` sentence, an optional `actions` slot on the right, and an optional `MastheadStats` strip along the foot dividing the field into 2 (mobile) or 4 (desktop) figures — mono, with `tone: "gold"` reserved for the count that needs acting on.
+
+### Ledger
+The desk book. `<Ledger>` is an `<ol>` with a top rule; `<LedgerRow index>` is a ruled grid row with an authored ink-in stagger; `<LedgerTime>` is the mono time in the left gutter; `<LedgerHeading trailing>` is a tracked day heading with a 2px rule. Used by the desk run-sheet, all appointments, the doctor's agenda, and the patient's own history.
+
+### StatusMark / AttendanceMark / SourceTag
+States are written down as **inked marks**, not pills: squared, mono, uppercase, tracked, with a colored border and a tinted fill. `PENDING` → "Awaiting action" in gold (the state waiting on a human). `CONFIRMED` → "Confirmed" in primary. `CANCELLED` → "Cancelled" in destructive. `ATTENDED` / `NO_SHOW` likewise. Copy is spelled out rather than the raw enum. `SourceTag` is quiet tracked text — context, not state.
+
+### StepRail
+A divided strip of numbered steps (`done` = filled circle-and-check, `current` = gold number on the highlight fill, `todo` = muted). Used by the patient's three-step request and the desk's three-step walk-in registration. Gold marks the step you are standing on.
+
+### ProportionBar
+Report data drawn from the real numbers with no chart library: one bar per composition question plus its own legend carrying count and percentage. Renders a dashed placeholder rather than an empty bar when the range has nothing in it.
+
 ### Buttons
-- **Shape:** Rounded-lg (6.25px radius), min-height 36px (sm) / 40px (default) / 44px (lg)
-- **Primary:** Forest green background, cream text. Used for main actions (Sign in, Submit request, Book & confirm).
-- **Outline:** Transparent background, border, foreground text. Used for secondary actions (Log in, Clear date).
-- **Ghost:** No background, no border. Used for low-emphasis actions (Cancel in dialogs, Sign out).
-- **Destructive:** Red background. Used only for cancel/delete actions.
-- **Hover:** Background darkens slightly, text stays constant. Focus-visible ring in `--ring` color.
-- **Disabled:** Reduced opacity (50%), pointer-events none.
+Primary (forest), outline, ghost, destructive, `field` (cream on the deep field), `field-outline`, and `gold` (money and payment actions only). Min height 36px small / 40px default / 44px large. No `transition-all`.
 
-### Cards
-- **Shape:** Rounded-xl (8.75px radius), white background
-- **Shadow:** `shadow-warm` on all cards. The landing board uses `shadow-warm-lg`.
-- **Border:** 1px `var(--border)` — warm stone, never gray.
-- **Internal padding:** 24px (p-6 or p-4 for compact cards)
-- **No header division:** CardHeader and CardContent flow together without a visible separator.
+### The chrome bar
+Deliberately quiet: a hairline-bottomed cream bar holding who you are, the role you are acting as, and sign-out. Identity lives in the sidebar and the mastheads, not here.
 
-### Inputs / Fields
-- **Style:** Warm border (`var(--border)`), transparent background, rounded-lg.
-- **Focus:** Border shifts to `var(--ring)` (lighter green), 3px ring in ring/50 opacity.
-- **Placeholder:** Muted foreground text, ends with appropriate punctuation.
-- **Error:** Border shifts to `var(--destructive)`, ring in destructive/20.
-- **Disabled:** Background tints to `var(--input)/50`, reduced opacity.
+### The sidebar
+Deep forest, a gold monogram seal, the clinic name in serif, the role as a tracked uppercase line, grouped navigation with tracked group headings, and a **gold left rule on the active item**. The clinic's address sits in the footer.
 
-### Navigation (Sidebar)
-- **Style:** Deep forest green background, light text.
-- **Active state:** Sidebar accent background (`#245038`), bold font weight.
-- **Logo badge:** Gold background, cream text, rounded-lg icon container.
-- **Clinic name:** DM Serif Display, white text.
-- **Hover:** Subtle background shift to sidebar-accent.
+### Empty states
+`EmptyState`: a dashed-ruled blank area — honestly reading as space in the book that nothing has been written into yet — with a serif line, one explanatory sentence, and always the single action that would fill it. Never a bare sentence.
 
-### Status Badges
-- **CONFIRMED:** Primary green background, cream text (via `variant="default"`).
-- **PENDING:** Secondary stone background, stone text (via `variant="secondary"`).
-- **CANCELLED:** Destructive red background, white text.
-- **Completed:** Primary green background (reuses default variant).
-
-### Dialogs
-- **Shape:** Rounded-xl, white background, `shadow-warm-lg`.
-- **Header:** Title in semibold, description in muted foreground.
-- **Footer:** Ghost "Cancel" + primary "Confirm" (or destructive for delete actions).
-- **Overlay:** Semi-transparent dark backdrop.
-
-### Tables
-- **Style:** Clean horizontal lines via `--border`. No vertical dividers.
-- **Header:** Muted foreground text, medium weight.
-- **Cells:** Default foreground, standard padding.
-- **Responsive:** Wrapped in `-mx-2 overflow-x-auto px-2` for horizontal scroll on mobile.
+### Loading states
+Skeletons shaped like the content they replace: mono-width lines in a ledger, time-chip blocks in the slot picker, a row list in a table. Never the word "Loading…" alone, except as a button's own pending label.
 
 ## Do's and Don'ts
 
-### Do:
-- **Do** use `fontFamily: "var(--font-heading)"` via inline style for every page-level heading. This is the only way DM Serif Display enters the system.
-- **Do** use `shadow-warm` on every Card component. The warm shadow is a signature of the visual system.
-- **Do** use `tabular-nums` on any element displaying numeric data (times, counts, percentages).
-- **Do** use the `page-enter` CSS class on layout content areas for smooth route transitions.
-- **Do** use the gold accent sparingly — one or two gold elements per screen maximum.
-- **Do** use `role="alert"` on error messages and `role="status"` on success banners.
-- **Do** include `aria-hidden="true"` on all decorative icons (Lucide icons used for visual emphasis).
+### Do
+- **Do** open every authenticated page with `PageMasthead` carrying that page's real context — the date, the counts, the primary action.
+- **Do** set every time, date, count, percentage, phone and payment reference in `.figure` (mono, tabular).
+- **Do** use `Ledger`/`LedgerRow`/`LedgerHeading` for any list of records.
+- **Do** use `StatusMark` for appointment states rather than inventing a badge.
+- **Do** keep gold to its list of permitted jobs, and use `--gold-ink` for gold text below 18px.
+- **Do** use `shadow-warm`/`shadow-warm-lg` on paper, and nothing on the page itself.
+- **Do** wrap every animation in a `prefers-reduced-motion` guard; `ink-in`, `pin-notice`, `page-enter` and `rule-draw` all have one.
+- **Do** use `role="alert"` for errors and `role="status"` for results that must survive a toast.
+- **Do** keep `aria-hidden` on decorative icons and give every icon-only control an accessible name.
 
-### Don't:
-- **Don't** use pure white (`#ffffff`) as a page background. The ground is always warm cream (`#faf8f2`).
-- **Don't** use gray shadows. All shadows use the warm `oklch(0.2 0.02 80 ...)` family.
-- **Don't** use DM Serif Display in body text, labels, or navigation items. It's for headings only.
-- **Don't** scatter gold accents across a page. Gold is a signature, not a highlight color.
-- **Don't** use `rounded-full` on cards or containers. Pills are for badges and small controls only.
-- **Don't** use `transition: all` on any element. List properties explicitly or use Tailwind's transition utilities.
-- **Don't** add kicker lines, eyebrow labels, or section numbers above headings. The heading carries its own weight.
-- **Don't** use gradient text, glass effects, or decorative blur. Depth comes from warm shadows, not visual effects.
+### Don't
+- **Don't** put a form, table, or ledger on the deep field.
+- **Don't** use `font-semibold` with the serif face.
+- **Don't** use pills for status, or `rounded-full` on cards and containers.
+- **Don't** apply gold to decoration: a stray dot, a generic icon, a divider that means nothing.
+- **Don't** use pure white as a page background; the ground is cream.
+- **Don't** use gray shadows, `transition-all`, gradient text, glass, or decorative blur.
+- **Don't** render a placeholder value as if it were real. The public phone number is shown only when the clinic has actually set it; otherwise the page says so.
+- **Don't** add kicker lines, eyebrow labels, or section numbers above headings.
+- **Don't** repeat a page title in both the masthead and the first card.

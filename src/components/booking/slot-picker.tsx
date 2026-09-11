@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { formatTime12h } from "@/lib/utils";
 
 function toDateInput(d: Date): string {
@@ -21,12 +24,14 @@ export function SlotPicker({
   selected,
   onSelect,
   refreshKey = 0,
+  showCalendar = true,
 }: {
   date: Date | undefined;
   onDateChange: (date: Date | undefined) => void;
   selected: string | null;
   onSelect: (time: string) => void;
   refreshKey?: number;
+  showCalendar?: boolean;
 }) {
   const [slotsData, setSlotsData] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +55,7 @@ export function SlotPicker({
         if (!cancelled) {
           setSlotsData([]);
           setLoading(false);
-          toast.error("Failed to load available slots");
+          toast.error("Could not load times for that day.");
         }
       }
     }, 0);
@@ -78,34 +83,78 @@ export function SlotPicker({
     : [];
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <Calendar
-        mode="single"
-        selected={date}
-        onSelect={onDateChange}
-        disabled={{ before: new Date() }}
-      />
-      {date && <p className="text-sm font-medium">{toDateInput(date)}</p>}
-      {loading && (
-        <p className="text-sm text-muted-foreground">Loading slots…</p>
+    <div className="flex flex-col gap-4">
+      {showCalendar && (
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={onDateChange}
+          disabled={{ before: new Date() }}
+          className="mx-auto"
+        />
       )}
-      {!loading && date && slots.length === 0 && (
+
+      {!date && (
         <p className="text-sm text-muted-foreground">
-          No open slots this day (closed or fully booked).
+          Pick a day to see the times that are open.
         </p>
       )}
-      {!loading && slots.length > 0 && (
-        <div className="flex max-h-48 flex-wrap justify-center gap-1 overflow-y-auto">
-          {slots.map((time) => (
-            <Button
-              key={time}
-              size="sm"
-              variant={selected === time ? "default" : "outline"}
-              onClick={() => onSelect(time)}
-            >
-              {formatTime12h(time)}
-            </Button>
-          ))}
+
+      {date && (
+        <div className="flex flex-col gap-3">
+          <p className="text-meta text-muted-foreground uppercase">
+            {format(date, "EEEE d MMMM")}
+          </p>
+
+          {loading && (
+            <div className="grid grid-cols-3 gap-2" aria-hidden>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 rounded-lg" />
+              ))}
+            </div>
+          )}
+
+          {!loading && slots.length === 0 && (
+            <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+              No times open this day — the clinic is closed, or every slot is
+              already taken. Try another day.
+            </p>
+          )}
+
+          {!loading && slots.length > 0 && (
+            <>
+              <div
+                role="group"
+                aria-label="Open times"
+                className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3"
+              >
+                {slots.map((time) => {
+                  const active = selected === time;
+                  return (
+                    <Button
+                      key={time}
+                      type="button"
+                      variant="outline"
+                      aria-pressed={active}
+                      onClick={() => onSelect(time)}
+                      className={cn(
+                        "figure h-10 justify-center px-2 text-sm",
+                        active &&
+                          "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                      )}
+                    >
+                      {formatTime12h(time)}
+                    </Button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-pretty text-muted-foreground">
+                These times were open a moment ago. Submitting holds your time
+                while the front desk reviews it — if someone was already ahead
+                of you, we&apos;ll ask you to pick another.
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

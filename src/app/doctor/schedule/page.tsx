@@ -4,29 +4,25 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getSchedule, type ScheduleEntry } from "@/lib/schedule/get-schedule";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  formatDayHeading,
+  formatTime12h,
+  relativeDayLabel,
+  todayIso,
+} from "@/lib/utils";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatTime12h } from "@/lib/utils";
+  PageMasthead,
+  MastheadStats,
+} from "@/components/console/page-masthead";
+import { EmptyState } from "@/components/console/empty-state";
+import { LedgerHeading } from "@/components/console/ledger";
+import { Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function toDateInput(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function todayStr(): string {
-  return toDateInput(new Date());
 }
 
 export default function SchedulePage() {
@@ -47,7 +43,7 @@ export default function SchedulePage() {
   }
 
   const fetchSchedule = useCallback(async () => {
-    const r = range === "today" ? { from: todayStr(), to: todayStr() } : weekBounds();
+    const r = range === "today" ? { from: todayIso(), to: todayIso() } : weekBounds();
     return getSchedule(supabase, r);
   }, [supabase, range]);
 
@@ -62,76 +58,137 @@ export default function SchedulePage() {
     return () => { cancelled = true; };
   }, [fetchSchedule]);
 
+  const grouped = Object.entries(
+    schedule.reduce<Record<string, ScheduleEntry[]>>((acc, row) => {
+      (acc[row.appointment_date] ??= []).push(row);
+      return acc;
+    }, {})
+  ).sort((a, b) => a[0].localeCompare(b[0]));
+
+  const todayCount = schedule.filter((r) => r.appointment_date === todayIso()).length;
+
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          Schedule
-        </h1>
-      </header>
+      <PageMasthead
+        meta={range === "today" ? relativeDayLabel(todayIso()) : "This week"}
+        title="Your schedule"
+        lead="Confirmed appointments only, as a read-only agenda. Attendance, cancellations and payment are handled at the front desk."
+        actions={
+          <>
+            <Button
+              size="sm"
+              className="h-9 px-3.5"
+              variant={range === "today" ? "field" : "field-outline"}
+              onClick={() => setRange("today")}
+            >
+              Today
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 px-3.5"
+              variant={range === "week" ? "field" : "field-outline"}
+              onClick={() => setRange("week")}
+            >
+              This week
+            </Button>
+          </>
+        }
+      >
+        {!loading && (
+          <MastheadStats
+            stats={[
+              { label: "In this range", value: schedule.length },
+              { label: "Today", value: todayCount },
+              {
+                label: "Days with clinic",
+                value: grouped.length,
+              },
+              {
+                label: "Reasons given",
+                value: schedule.filter((r) => r.reason).length,
+              },
+            ]}
+          />
+        )}
+      </PageMasthead>
 
-      <Card className="shadow-warm">
-        <CardHeader>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Confirmed appointments</CardTitle>
-              <CardDescription>
-                Read-only view. Attendance and cancellations are handled at the front desk.
-              </CardDescription>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                size="sm"
-                variant={range === "today" ? "default" : "outline"}
-                onClick={() => setRange("today")}
-              >
-                Today
-              </Button>
-              <Button
-                size="sm"
-                variant={range === "week" ? "default" : "outline"}
-                onClick={() => setRange("week")}
-              >
-                This Week
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <Card>
+        <CardContent className="pt-4">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : schedule.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No confirmed appointments in this range.
-            </p>
-          ) : (
-            <div className="-mx-2 overflow-x-auto px-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Reason</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {schedule.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>{row.appointment_date}</TableCell>
-                      <TableCell>{formatTime12h(row.appointment_time)}</TableCell>
-                      <TableCell>{row.patients?.full_name}</TableCell>
-                      <TableCell>{row.patients?.phone}</TableCell>
-                      <TableCell>{row.reason ?? "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex gap-4">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 flex-1" />
+                </div>
+              ))}
             </div>
+          ) : grouped.length === 0 ? (
+            <EmptyState
+              title="Nothing confirmed in this range"
+              description={
+                range === "today"
+                  ? "No confirmed appointments for today. Switch to This week to look ahead."
+                  : "No confirmed appointments this week."
+              }
+              action={
+                range === "today" && (
+                  <Button variant="outline" size="sm" onClick={() => setRange("week")}>
+                    Look at this week
+                  </Button>
+                )
+              }
+            />
+          ) : (
+            grouped.map(([date, rows], groupIndex) => (
+              <section key={date}>
+                <LedgerHeading
+                  className={groupIndex === 0 ? undefined : "mt-8"}
+                  trailing={`${rows.length} patient${rows.length === 1 ? "" : "s"}`}
+                >
+                  {relativeDayLabel(date)} · {formatDayHeading(date)}
+                </LedgerHeading>
+                <ol>
+                  {rows.map((row, i) => (
+                    <li
+                      key={row.id}
+                      className="ledger-row ink-in"
+                      style={{ "--i": i + groupIndex } as React.CSSProperties}
+                    >
+                      <div className="figure text-sm sm:text-data">
+                        {formatTime12h(row.appointment_time)}
+                      </div>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <span className="text-sm font-medium">
+                          {row.patients?.full_name ?? "Unknown patient"}
+                        </span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {row.patients?.phone && (
+                            <a
+                              href={`tel:${row.patients.phone}`}
+                              className="figure inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+                            >
+                              <Phone className="size-3" aria-hidden="true" />
+                              {row.patients.phone}
+                            </a>
+                          )}
+                          {row.reason && (
+                            <span
+                              className={cn(
+                                "text-xs text-pretty text-muted-foreground",
+                                "max-w-prose"
+                              )}
+                            >
+                              {row.reason}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ))
           )}
         </CardContent>
       </Card>

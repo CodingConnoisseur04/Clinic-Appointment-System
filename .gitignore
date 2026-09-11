@@ -49,3 +49,6 @@ supabase/.branches/
 /graft/
 
 .playwright-mcp
+
+# screenshot-review harness output — regenerable (node scripts/screenshot-review.mjs)
+.impeccable/review/

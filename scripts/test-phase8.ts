@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+import { resetTestState } from "./test-support";
 import { createAppointment } from "@/lib/booking/create-appointment";
 import { markAttendance } from "@/lib/booking/update-appointment";
 import { sendConfirmationSms } from "@/lib/sms/send-confirmation";
@@ -105,6 +107,9 @@ function dateOffset(days: number): string {
 }
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   const rec = anonClient();
   const doctor = anonClient();
   await signIn(rec, "receptionist@clinic.local", "dev-password-only");

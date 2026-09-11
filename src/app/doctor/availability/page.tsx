@@ -9,24 +9,16 @@ import {
   removeException,
 } from "@/lib/availability/manage-exceptions";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDateLong, relativeDayLabel, todayIso } from "@/lib/utils";
+import { PageMasthead } from "@/components/console/page-masthead";
+import { EmptyState } from "@/components/console/empty-state";
+import { LedgerHeading } from "@/components/console/ledger";
+import { cn } from "@/lib/utils";
 
 type AvailabilityRow = {
   id: string;
@@ -45,14 +37,6 @@ type ExceptionRow = {
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-function toDateInput(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function todayStr(): string {
-  return toDateInput(new Date());
-}
-
 export default function AvailabilityPage() {
   const supabase = createClient();
   const [hours, setHours] = useState<AvailabilityRow[]>([]);
@@ -60,6 +44,7 @@ export default function AvailabilityPage() {
   const [edits, setEdits] = useState<
     Record<string, { startTime: string; endTime: string; isActive: boolean }>
   >({});
+  const [loading, setLoading] = useState(true);
 
   const [excDate, setExcDate] = useState("");
   const [excReason, setExcReason] = useState("");
@@ -70,7 +55,7 @@ export default function AvailabilityPage() {
       supabase
         .from("availability_exceptions")
         .select("*")
-        .gte("exception_date", todayStr())
+        .gte("exception_date", todayIso())
         .order("exception_date"),
     ]);
     return {
@@ -115,12 +100,17 @@ export default function AvailabilityPage() {
           ])
         )
       );
+      setLoading(false);
     });
     return () => { cancelled = true; };
   }, [fetchAvailability]);
 
   function editFor(id: string) {
     return edits[id] ?? { startTime: "", endTime: "", isActive: false };
+  }
+
+  function patch(id: string, fields: Partial<{ startTime: string; endTime: string; isActive: boolean }>) {
+    setEdits((prev) => ({ ...prev, [id]: { ...prev[id], ...fields } }));
   }
 
   async function saveHours(row: AvailabilityRow) {
@@ -180,105 +170,112 @@ export default function AvailabilityPage() {
     }
   }
 
+  const activeDays = hours.filter((h) => h.is_active).length;
+
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          Manage Availability
-        </h1>
-      </header>
+      <PageMasthead
+        meta="Consulting room"
+        title="Working hours"
+        lead="These hours are what generate the times patients can request. Save a row and you are warned immediately if a confirmed appointment now falls outside it."
+      />
 
-      <Card className="shadow-warm">
+      <Card>
         <CardHeader>
           <CardTitle>Weekly working hours</CardTitle>
-          <CardDescription>
-            Edit inline and save per row. Saving warns you if confirmed
-            appointments now fall outside your hours.
-          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="-mx-2 overflow-x-auto px-2">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Day</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Active</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {hours.map((row) => {
+          {loading ? (
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <LedgerHeading trailing={`${activeDays} of 7 days open`}>
+                Hours
+              </LedgerHeading>
+              <ul>
+                {hours.map((row, i) => {
                   const e = editFor(row.id);
                   return (
-                    <TableRow key={row.id}>
-                      <TableCell>{DAYS[row.day_of_week]}</TableCell>
-                      <TableCell>
+                    <li
+                      key={row.id}
+                      className="ink-in grid items-center gap-x-4 gap-y-3 border-b border-border py-3 last:border-b-0 sm:grid-cols-[9rem_auto_auto_1fr_auto]"
+                      style={{ "--i": i } as React.CSSProperties}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "size-1.5 rounded-full",
+                            e.isActive ? "bg-[var(--primary)]" : "bg-border"
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "text-section text-sm",
+                            e.isActive ? "text-foreground" : "text-muted-foreground"
+                          )}
+                        >
+                          {DAYS[row.day_of_week]}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
                         <Input
                           type="time"
-                          className="w-28"
+                          aria-label={`${DAYS[row.day_of_week]} start time`}
+                          className="figure w-28"
                           value={e.startTime}
-                          onChange={(ev) =>
-                            setEdits((prev) => ({
-                              ...prev,
-                              [row.id]: { ...prev[row.id], startTime: ev.target.value },
-                            }))
-                          }
+                          onChange={(ev) => patch(row.id, { startTime: ev.target.value })}
                         />
-                      </TableCell>
-                      <TableCell>
+                        <span aria-hidden className="text-muted-foreground">
+                          –
+                        </span>
                         <Input
                           type="time"
-                          className="w-28"
+                          aria-label={`${DAYS[row.day_of_week]} end time`}
+                          className="figure w-28"
                           value={e.endTime}
-                          onChange={(ev) =>
-                            setEdits((prev) => ({
-                              ...prev,
-                              [row.id]: { ...prev[row.id], endTime: ev.target.value },
-                            }))
-                          }
+                          onChange={(ev) => patch(row.id, { endTime: ev.target.value })}
                         />
-                      </TableCell>
-                      <TableCell>
+                      </div>
+
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Switch
                           checked={e.isActive}
-                          onCheckedChange={(v) =>
-                            setEdits((prev) => ({
-                              ...prev,
-                              [row.id]: { ...prev[row.id], isActive: v },
-                            }))
-                          }
+                          aria-label={`${DAYS[row.day_of_week]} open`}
+                          onCheckedChange={(v) => patch(row.id, { isActive: v })}
                         />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" onClick={() => saveHours(row)}>
-                          Save
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                        {e.isActive ? "Open" : "Closed"}
+                      </label>
+
+                      <span className="hidden text-xs text-muted-foreground sm:block">
+                        {row.slot_duration_minutes} min per appointment
+                      </span>
+
+                      <Button size="sm" className="justify-self-start" onClick={() => saveHours(row)}>
+                        Save
+                      </Button>
+                    </li>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </div>
+              </ul>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      <Card className="shadow-warm">
+      <Card>
         <CardHeader>
-          <CardTitle>Closed dates</CardTitle>
-          <CardDescription>
-            One-off whole-day closures. Booking forms stop offering slots on closed dates.
-          </CardDescription>
+          <CardTitle>Days the clinic is closed</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-5">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="exc-date">Date</Label>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="exc-date">Date to close</Label>
               <Input
                 id="exc-date"
                 type="date"
@@ -287,50 +284,55 @@ export default function AvailabilityPage() {
                 onChange={(e) => setExcDate(e.target.value)}
               />
             </div>
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-52 flex-1 flex-col gap-1.5">
               <Label htmlFor="exc-reason">Reason (optional)</Label>
               <Input
                 id="exc-reason"
-                placeholder="Conference, sick day…"
+                placeholder="Conference, sick day, holiday…"
                 value={excReason}
                 onChange={(e) => setExcReason(e.target.value)}
               />
             </div>
-            <Button onClick={submitException}>Close date</Button>
+            <Button onClick={submitException}>Close that day</Button>
           </div>
 
-          {exceptions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No upcoming closures.</p>
-          ) : (
-            <div className="-mx-2 overflow-x-auto px-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Reason</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {exceptions.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>{row.exception_date}</TableCell>
-                      <TableCell>{row.reason ?? "—"}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteException(row)}
-                        >
-                          Reopen
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <div>
+            <LedgerHeading trailing={`${exceptions.length} upcoming`}>
+              Upcoming closures
+            </LedgerHeading>
+            {exceptions.length === 0 ? (
+              <EmptyState
+                className="mt-4 border-0 bg-transparent"
+                title="No closed days coming up"
+                description="The clinic follows its weekly hours until you close a specific date here."
+              />
+            ) : (
+              <ul>
+                {exceptions.map((row, i) => (
+                  <li
+                    key={row.id}
+                    className="ink-in grid items-center gap-3 border-b border-border py-3 last:border-b-0 sm:grid-cols-[1fr_auto]"
+                    style={{ "--i": i } as React.CSSProperties}
+                  >
+                    <div>
+                      <p className="figure text-sm">{formatDateLong(row.exception_date)}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {relativeDayLabel(row.exception_date)}
+                        {row.reason ? ` · ${row.reason}` : ""}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteException(row)}
+                    >
+                      Reopen
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

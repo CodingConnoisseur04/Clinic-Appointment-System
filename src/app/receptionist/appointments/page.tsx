@@ -1,17 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { markAttendance, rejectAppointment } from "@/lib/booking/update-appointment";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  markAttendance,
+  rejectAppointment,
+} from "@/lib/booking/update-appointment";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -29,32 +25,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAppointments, type AppointmentRow } from "@/hooks/use-appointments";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { useAppointments, todayStr } from "@/hooks/use-appointments";
-import { formatTime12h } from "@/lib/utils";
+  formatDateLong,
+  formatDayHeading,
+  formatTime12h,
+  relativeDayLabel,
+  todayIso,
+} from "@/lib/utils";
+import {
+  PageMasthead,
+  MastheadStats,
+} from "@/components/console/page-masthead";
+import { EmptyState } from "@/components/console/empty-state";
+import {
+  AttendanceMark,
+  SourceTag,
+  StatusMark,
+} from "@/components/console/status-mark";
+import { LedgerHeading } from "@/components/console/ledger";
 
 export default function AppointmentsPage() {
   const { appointments, loading, refresh, supabase } = useAppointments();
   const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "CONFIRMED" | "CANCELLED">("all");
   const [dateFilter, setDateFilter] = useState("");
-  const [rejectTarget, setRejectTarget] = useState<(typeof appointments)[0] | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<AppointmentRow | null>(null);
   const [attendanceTarget, setAttendanceTarget] = useState<{
-    row: (typeof appointments)[0];
+    row: AppointmentRow;
     mark: "ATTENDED" | "NO_SHOW";
   } | null>(null);
+
+  const today = todayIso();
 
   const filtered = appointments.filter((a) => {
     if (statusFilter !== "all" && a.status !== statusFilter) return false;
     if (dateFilter && a.appointment_date !== dateFilter) return false;
     return true;
   });
+
+  /* Grouped by day, newest first: a ledger is easier to read by day than by
+     a repeating Date column. */
+  const grouped = useMemo(() => {
+    const map = new Map<string, AppointmentRow[]>();
+    for (const row of filtered) {
+      const list = map.get(row.appointment_date) ?? [];
+      list.push(row);
+      map.set(row.appointment_date, list);
+    }
+    return [...map.entries()]
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, rows]) => ({
+        date,
+        rows: rows.sort((a, b) => a.appointment_time.localeCompare(b.appointment_time)),
+      }));
+  }, [filtered]);
+
+  const needsMarking = appointments.filter(
+    (a) => a.status === "CONFIRMED" && !a.attendance && a.appointment_date <= today
+  ).length;
 
   async function act(fn: () => Promise<{ success: boolean; message?: string }>, okMsg: string) {
     const result = await fn();
@@ -69,163 +98,231 @@ export default function AppointmentsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          All Appointments
-        </h1>
-      </header>
+      <PageMasthead
+        meta="Records"
+        title="All appointments"
+        lead="Every appointment, online or at the desk, kept for good — cancelling marks a record, it never deletes one. Mark attendance after each day so the no-show report stays honest."
+        actions={
+          <a
+            href="/receptionist/walk-in"
+            className="inline-flex h-9 items-center rounded-lg bg-field-foreground px-3.5 text-sm font-medium text-field hover:bg-field-foreground/88"
+          >
+            Register a walk-in
+          </a>
+        }
+      >
+        {!loading && (
+          <MastheadStats
+            stats={[
+              { label: "In view", value: filtered.length },
+              {
+                label: "Awaiting action",
+                value: appointments.filter((a) => a.status === "PENDING").length,
+                tone:
+                  appointments.some((a) => a.status === "PENDING") ? "gold" : "default",
+              },
+              {
+                label: "Needs attendance",
+                value: needsMarking,
+                tone: needsMarking > 0 ? "gold" : "default",
+              },
+              { label: "Cancelled", value: appointments.filter((a) => a.status === "CANCELLED").length },
+            ]}
+          />
+        )}
+      </PageMasthead>
 
-      <Card className="shadow-warm">
-        <CardHeader>
-          <CardTitle>Appointments</CardTitle>
-          <CardDescription>
-            Mark attendance once dates pass; cancel to free the slot.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <Label>Status</Label>
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="filter-date">Date</Label>
-              <Input
-                id="filter-date"
-                type="date"
-                className="w-44"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
-            </div>
-            {dateFilter && (
-              <Button variant="ghost" onClick={() => setDateFilter("")}>
-                Clear date
-              </Button>
-            )}
-          </div>
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-warm">
+        <div className="flex flex-col gap-1">
+          <Label className="text-meta text-muted-foreground uppercase">Status</Label>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="PENDING">Awaiting action</SelectItem>
+              <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="filter-date" className="text-meta text-muted-foreground uppercase">
+            One day only
+          </Label>
+          <Input
+            id="filter-date"
+            type="date"
+            className="w-44"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          />
+        </div>
+        {dateFilter && (
+          <Button variant="ghost" onClick={() => setDateFilter("")}>
+            Clear day
+          </Button>
+        )}
+        <p className="figure ml-auto text-xs text-muted-foreground">
+          {filtered.length} of {appointments.length}
+        </p>
+      </div>
 
+      <Card>
+        <CardContent className="pt-4">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No appointments match the filters.
-            </p>
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex gap-4">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 flex-1" />
+                  <Skeleton className="h-5 w-28" />
+                </div>
+              ))}
+            </div>
+          ) : grouped.length === 0 ? (
+            <EmptyState
+              title="No appointments match"
+              description="Nothing matches these filters. Widen the status filter, or clear the day."
+              action={
+                (statusFilter !== "all" || dateFilter) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStatusFilter("all");
+                      setDateFilter("");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )
+              }
+            />
           ) : (
-            <div className="-mx-2 overflow-x-auto px-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Patient</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completion</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((row) => {
-                    const pastOrToday = row.appointment_date <= todayStr();
+            grouped.map(({ date, rows }) => (
+              <section key={date}>
+                <LedgerHeading trailing={`${rows.length} record${rows.length === 1 ? "" : "s"}`}>
+                  {relativeDayLabel(date)} · {formatDayHeading(date)}
+                </LedgerHeading>
+                <ol>
+                  {rows.map((row, i) => {
+                    const pastOrToday = row.appointment_date <= today;
                     return (
-                      <TableRow key={row.id}>
-                        <TableCell>{row.appointment_date}</TableCell>
-                        <TableCell>{formatTime12h(row.appointment_time)}</TableCell>
-                        <TableCell>{row.patients?.full_name}</TableCell>
-                        <TableCell>
-                          {row.source === "online" ? "Online" : "Walk-in"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              row.status === "CONFIRMED"
-                                ? "default"
-                                : row.status === "PENDING"
-                                  ? "secondary"
-                                  : "destructive"
-                            }
-                          >
-                            {row.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {row.attendance ? (
-                            <Badge variant="default">Completed</Badge>
-                          ) : row.status === "CONFIRMED" && pastOrToday ? (
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  setAttendanceTarget({ row, mark: "ATTENDED" })
-                                }
-                              >
-                                Attended
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  setAttendanceTarget({ row, mark: "NO_SHOW" })
-                                }
-                              >
-                                No-show
-                              </Button>
-                            </div>
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
+                      <li
+                        key={row.id}
+                        className="ledger-row ink-in"
+                        style={{ "--i": i } as React.CSSProperties}
+                      >
+                        <div className="figure text-sm sm:text-data">
+                          {formatTime12h(row.appointment_time)}
+                        </div>
+
+                        <div className="flex min-w-0 flex-col gap-1.5">
+                          <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                            <span className="text-sm font-medium">
+                              {row.patients?.full_name ?? "Unknown patient"}
+                            </span>
+                            <SourceTag source={row.source} />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            {row.reason && (
+                              <span className="text-xs text-pretty text-muted-foreground">
+                                {row.reason}
+                              </span>
+                            )}
+                            {row.payment_method && (
+                              <span className="text-xs text-muted-foreground">
+                                Paid by {row.payment_method === "cash" ? "cash" : "GCash"}
+                                {row.payment_reference && (
+                                  <>
+                                    {" · "}
+                                    <span className="figure text-foreground">
+                                      {row.payment_reference}
+                                    </span>
+                                  </>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusMark status={row.status} />
+                            {row.attendance && <AttendanceMark attendance={row.attendance} />}
+                          </div>
+                        </div>
+
+                        <div className="col-start-2 flex flex-wrap items-center gap-2 sm:col-start-3 sm:justify-end">
+                          {!row.attendance &&
+                            row.status === "CONFIRMED" &&
+                            pastOrToday && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={() =>
+                                    setAttendanceTarget({ row, mark: "ATTENDED" })
+                                  }
+                                >
+                                  Attended
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8"
+                                  onClick={() =>
+                                    setAttendanceTarget({ row, mark: "NO_SHOW" })
+                                  }
+                                >
+                                  No-show
+                                </Button>
+                              </>
+                            )}
                           {row.status !== "CANCELLED" && !row.attendance && (
                             <Button
                               size="sm"
                               variant="destructive"
+                              className="h-8"
                               onClick={() => setRejectTarget(row)}
                             >
                               Cancel
                             </Button>
                           )}
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </li>
                     );
                   })}
-                </TableBody>
-              </Table>
-            </div>
+                </ol>
+              </section>
+            ))
           )}
         </CardContent>
       </Card>
 
-      {/* Reject dialog */}
+      {/* Cancel dialog */}
       <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cancel appointment?</DialogTitle>
+            <DialogTitle>Cancel this appointment?</DialogTitle>
             <DialogDescription>
-              This sets the appointment to CANCELLED and frees the slot.
+              {rejectTarget && (
+                <>
+                  {rejectTarget.patients?.full_name ?? "This patient"} ·{" "}
+                  {formatDateLong(rejectTarget.appointment_date)} at{" "}
+                  {formatTime12h(rejectTarget.appointment_time)}. It is marked
+                  Cancelled and the slot frees up. The record itself is kept, and
+                  the patient is not texted automatically.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setRejectTarget(null)}>
-              Keep
+              Keep it
             </Button>
             <Button
               variant="destructive"
@@ -256,14 +353,21 @@ export default function AppointmentsPage() {
               Mark as {attendanceTarget?.mark === "ATTENDED" ? "attended" : "no-show"}?
             </DialogTitle>
             <DialogDescription>
-              {attendanceTarget?.row.patients?.full_name} —{" "}
-              {attendanceTarget?.row.appointment_date}{" "}
-              {formatTime12h(attendanceTarget?.row.appointment_time ?? "")}
+              {attendanceTarget ? (
+                <>
+                  {attendanceTarget.row.patients?.full_name ?? "This patient"} ·{" "}
+                  {formatDateLong(attendanceTarget.row.appointment_date)} at{" "}
+                  {formatTime12h(attendanceTarget.row.appointment_time)}.{" "}
+                  {attendanceTarget.mark === "NO_SHOW"
+                    ? "This counts against the clinic's no-show rate in Reports."
+                    : "This records that the patient was seen."}
+                </>
+              ) : null}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAttendanceTarget(null)}>
-              Cancel
+              Not now
             </Button>
             <Button
               onClick={async () => {
@@ -276,7 +380,7 @@ export default function AppointmentsPage() {
                       appointmentId: t.row.id,
                       attendance: t.mark,
                     }),
-                  `Marked ${t.mark}.`
+                  t.mark === "ATTENDED" ? "Marked attended." : "Marked no-show."
                 );
               }}
             >

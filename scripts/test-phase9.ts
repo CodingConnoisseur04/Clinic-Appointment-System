@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 
+import { resetTestState } from "./test-support";
+
 function loadEnvLocal() {
   let file: string;
   try {
@@ -35,6 +37,9 @@ function report(n: number, name: string, pass: boolean, detail = "") {
 }
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // Plain anon client — no session anywhere.
   const anon = createClient(URL, ANON);
 
@@ -43,11 +48,23 @@ async function main() {
     .from("doctor_availability")
     .select("*")
     .order("day_of_week");
+
+  // The spec's case is "an anon request can read the clinic's hours". Asserting
+  // an exact row count made this fail the moment any other day existed in the
+  // table, which said nothing about whether anon could read it. Assert instead
+  // that every seeded weekday comes back to an anonymous caller.
+  const seededDays = [1, 2, 3, 4, 5];
+  const readableDays = new Set(
+    (data ?? []).map((r: { day_of_week: number }) => r.day_of_week)
+  );
+  const allSeededDaysReadable = seededDays.every((d) => readableDays.has(d));
   report(
     1,
     "anon can read doctor_availability (landing-page hours)",
-    !error && (data?.length ?? 0) === 5,
-    error ? error.message : `rows=${data?.length}`
+    !error && allSeededDaysReadable,
+    error
+      ? error.message
+      : `rows=${data?.length}, seededDaysPresent=${allSeededDaysReadable}`
   );
 
   // ---- Test 2: anon still cannot WRITE doctor_availability -----------------

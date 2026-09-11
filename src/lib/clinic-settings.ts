@@ -4,9 +4,22 @@ export type ClinicSettings = {
   receptionist_phone: string;
 };
 
+/*
+ * The seed value shipped in the local database. It is obviously not a real
+ * number, so anything reading it can tell the clinic has not set its line yet
+ * and say so, rather than publishing a fake number as if it were real.
+ */
+export const PLACEHOLDER_PHONE = "(088) 000-0000";
+
 const DEFAULTS: ClinicSettings = {
-  receptionist_phone: "(088) 000-0000",
+  receptionist_phone: PLACEHOLDER_PHONE,
 };
+
+export function isPlaceholderPhone(value: string | null | undefined): boolean {
+  if (!value) return true;
+  const trimmed = value.trim();
+  return trimmed === "" || trimmed === PLACEHOLDER_PHONE || /^\D*0{3}\D*0{4}\D*$/.test(trimmed);
+}
 
 export async function getClinicSettings(
   supabase: SupabaseClient

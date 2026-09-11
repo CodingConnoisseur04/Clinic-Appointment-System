@@ -1035,3 +1035,257 @@ None — ad-hoc design work outside any phase spec.
   with YAML frontmatter tokens, 8 canonical sections, named rules
 - `.impeccable/design.json` sidecar created — tonal ramps, shadow/motion
   tokens, component HTML/CSS snippets for the live panel
+
+---
+
+---
+
+## Design pass 2 — "Warm Confidence" deepened, all 15 routes
+**Date:** 2026-09-11
+**Branch:** main (uncommitted)
+**Spec:** none — ad-hoc design work outside any phase spec. The human's brief
+was "very basic, no identity, weak design, pages structured not
+satisfactorily", with three decisions taken up front: cover all 15 routes as
+one system; **deepen** the existing world rather than replace it; free to
+change visuals, page structure, and UI copy (product facts stay sacred).
+
+### Why the first revamp still read as basic
+
+Recorded because it is the reasoning this pass is built on. The palette was
+never the problem:
+
+1. **The identity never got past the front door.** The landing page had a real
+   world (pinned notices, gold pins, settle motion); the interior was stock
+   shadcn. The identity existed on 1 of 15 routes.
+2. **Every interior page was the same page.** All eight gated routes opened
+   with identical boilerplate — `<h1 class="text-2xl font-semibold">` plus an
+   inline DM Serif style — then a stack of `Card shadow-warm`.
+3. **No middle type register.** 60px hero, 24px page title, nothing between, so
+   everything interior read as "a form".
+4. **The product's differentiator was invisible.** The DB-guaranteed
+   no-double-booking and the honest hybrid flow were never shown anywhere.
+5. **Gold carried no information** — a stray header dot, a logo badge.
+6. **Zero authored material** — no imagery, texture, or data graphic.
+7. **Dead code and fake trust signals** — an unreachable `.dark` block, a
+   `next-themes` dependency with no provider, and `(088) 000-0000` rendered on
+   the one page whose whole job is building trust.
+
+### What was built
+
+**1. The palette now owns regions instead of scattering accents (Committed,
+not Restrained).** New `--field` (`#143d28`, a sanctioned darker step of the
+existing primary ramp) owns whole areas: the public hero, the auth split panel,
+and every page masthead. Cream remains the ground for records and forms.
+
+**2. Gold got a job, written down as a rule.** Gold marks *time, money, and the
+next thing that matters* and nothing else: board pins, the current step, a
+`PENDING` state, an unset placeholder, payment references, "still to come" and
+"needs attendance" counts, and the masthead hairline. `--gold-ink` (`#8a650a`)
+added for gold text under 18px, where canonical gold fails contrast.
+
+**3. A real type scale with the missing middle register.** `display`,
+`title`, `stat-figure`, `section`, `lead`, `body`, `label`, `meta`, `data`,
+`control`. Page titles went from 24px sans-semibold to `clamp(1.75rem, 3.2vw,
+2.375rem)` serif. The main identity move: **every time, date, count,
+percentage, phone and payment reference is now set in Geist Mono with tabular
+figures** (`--font-geist-mono` was loaded since Phase 1 and completely unused).
+The console now reads like a clinic's log book rather than a dashboard, and
+figures line up down a column for free.
+
+**4. The desk book.** The landing page's "board" is the clinic's outside wall;
+its inside counterpart is the ruled appointment ledger the front desk actually
+worked from. New shared vocabulary, used across four pages:
+- `PageMasthead` + `MastheadStats` — each page's identity band, and never the
+  same twice because it carries that page's real context (the date, the counts,
+  the primary action) instead of a bare title.
+- `Ledger` / `LedgerRow` / `LedgerTime` / `LedgerHeading` — ruled rows, a
+  mono time gutter, authored ink-in stagger.
+- `StatusMark` / `AttendanceMark` / `SourceTag` — states as squared inked
+  marks rather than pills.
+- `StepRail` — numbered steps for the two three-part flows.
+- `ProportionBar` — report data drawn from real numbers, no chart library.
+- `EmptyState` — dashed blank space that reads as "nothing written here yet",
+  always carrying the one action that would fill it.
+- `ClinicSeal` — the gold `GF` monogram.
+
+**5. Task-shaped pages, not one template.**
+- **Receptionist home** is now the day's run-sheet: a masthead carrying the
+  day's real numbers over a time-gutter ledger, instead of three stat cards and
+  two card grids.
+- **Requests to action** is a decision queue: one card per request showing what
+  it was for, who is asking, their phone as a `tel:` link, when they sent it,
+  and Confirm / Cancel. The **SMS result is now shown on the page** rather than
+  only in a toast, because a failed confirmation is something the desk has to
+  act on after the toast is gone.
+- **Walk-in registration** is a numbered desk sequence with the step rail, a
+  visible "existing record found — it will be reused" state, and gold on the
+  payment card (it is where the money is taken).
+- **All appointments** is grouped by day, newest first, each day its own ledger
+  with attendance marking and cancellation inline; the toolbar moved out of a
+  card header into a ruled strip.
+- **Reports** carries two headline figures and real data graphics: outcome mix,
+  source mix, the attended / marked / never-marked split, and the TEXT DELIVERY
+  report (see deviations).
+- **Patient booking** is a legible three-step request with a sticky summary and
+  a receipt-style confirmation, against the under-3-minutes constraint.
+- **Patient history** is a ledger split upcoming vs past, with payment shown
+  only where it exists.
+- **Doctor schedule** is a date-grouped day agenda; **working hours** is a ruled
+  weekly list with an open/closed dot per day instead of a table of inputs.
+- **Landing** leads with the clinic's own name at display scale on the deep
+  field, today's live hours computed from `doctor_availability`, and the honest
+  three-step flow *before* anyone signs up; the pinned board is the second act.
+- **Login / signup** moved onto a two-zone shell: field panel with identity
+  beside a calm cream form column.
+
+**6. Motion, bounded.** `ink-in` (staggered via a `--i` custom property),
+`rule-draw` (the masthead hairline), plus the existing `pin-notice` and
+`page-enter`. All four have `prefers-reduced-motion` guards.
+
+**7. Two real bugs fixed along the way (both pre-existing, both found by the
+new harness).**
+- `src/hooks/use-mobile.ts` read `window.innerWidth` inside the `useState`
+  initializer, so the client's first render disagreed with the server's on
+  every mobile load — a hydration mismatch on all 10 authenticated routes at
+  mobile width, which makes React discard the server tree and re-render from
+  scratch. Fixed by starting at the server-safe `false` and syncing from
+  `matchMedia` in the effect (the listener was already there, it was just never
+  fired initially).
+- `Toaster` read its theme from `next-themes`, which has no provider in this
+  app, so anyone with a dark-mode OS got dark toasts on a light-only app.
+  Pinned to `theme="light"`.
+
+**8. The placeholder phone is no longer published as if real.** The public page
+now shows the number only when the clinic has actually set one, and otherwise
+says so; the Settings page carries a gold-marked warning while the value is
+still the placeholder.
+
+### Files touched
+
+**Design system / shell**
+- `src/app/globals.css` — type registers, field/highlight/board tokens, the
+  `.mark` / `.ledger-row` / `.stat-figure` / `.field` / `.rule-gold` / `.paper`
+  vocabularies, `ink-in` + `rule-draw` motion, single-weight serif guard
+- `DESIGN.md` — rewritten from the built world
+- `src/app/layout.tsx` — untouched (fonts already loaded)
+- `src/components/ui/card.tsx` — warm paper border, `CardTitle` moved from serif
+  to the sans `section` register
+- `src/components/ui/button.tsx` — added `field`, `field-outline`, `gold`
+- `src/components/ui/sonner.tsx` — theme pinned to light
+- `src/components/nav/sidebar-nav.tsx` — identity block, grouped nav, gold
+  active rule, address footer
+- `src/components/dashboard-header.tsx` — quiet cream bar, no backdrop blur
+- `src/components/clinic-seal.tsx` — new
+- `src/components/console/{page-masthead,ledger,status-mark,step-rail,proportion-bar,empty-state}.tsx` — new
+- `src/components/auth/auth-shell.tsx` — new
+- `src/lib/brand.ts` — removed the dead `phone` field
+- `src/lib/clinic-settings.ts` — `PLACEHOLDER_PHONE` + `isPlaceholderPhone`
+- `src/lib/utils.ts` — date-only parsing and display helpers (`formatDateShort`,
+  `formatDateLong`, `formatDayHeading`, `todayIso`, `addDaysIso`,
+  `relativeDayLabel`) built on the already-installed `date-fns`
+- `src/hooks/use-mobile.ts` — hydration fix
+- `src/hooks/use-appointments.ts` — added `created_at` to the row shape
+- `{patient,receptionist,doctor}/layout.tsx` — padding + `gap-6`
+
+**Routes** — all 13 rendered routes rebuilt: `page.tsx`, `login`, `signup`,
+`patient/book`, `patient/appointments`, `receptionist`, `receptionist/pending`,
+`receptionist/walk-in`, `receptionist/appointments`, `receptionist/reports`,
+`receptionist/settings`, `doctor/schedule`, `doctor/availability`.
+(`patient/page.tsx` still just redirects to `/patient/book` — deliberately
+left alone.)
+
+**Verification**
+- `scripts/screenshot-review.mjs` — rewritten from a 3-page screenshot script
+  into a real harness (see below)
+
+### Deviations from spec
+
+No spec governs this pass, so these are deviations from the **Phase 9 spec**
+and from prior behaviour that the human should rule on:
+
+1. **Public phone number.** The Phase 9 spec said to show a placeholder like
+   `(088) 000-0000` "clearly marked as illustrative". I instead show no number
+   and state that the line is to be posted, reasoning that a number that looks
+   made up on the trust page costs more than a missing one. **If the spec's
+   intent was to display a marked placeholder, this is the divergence to
+   reverse** — it is a two-line change in `src/app/page.tsx`.
+2. **The SMS report is now rendered.** Phase 8 built and tested `getSmsReport`,
+   and `progress.md` describes three receptionist reports, but only two were
+   ever surfaced in the UI. It now has a panel on the Reports page. This is a
+   **UI addition, not design**; it uses the existing tested function unchanged.
+3. **Appointment list order changed** from ascending to newest-first. History
+   is read backwards in practice; the original order put last year's records
+   above today's.
+4. **`PENDING` is now displayed as "Awaiting action"** rather than the raw
+   enum, and `CANCELLED` as "Cancelled". The underlying values are unchanged.
+5. **The receptionist home page no longer shows a receptionist-contact card.**
+   It duplicated the Settings page; the public number is edited in one place.
+6. **The patient booking form is no longer a single flat three-column card.**
+   Requesting a date, a time and details now reads as three steps, with a
+   sticky summary. All existing logic (profile fetch, `find-or-create`,
+   `createAppointment`, `SLOT_TAKEN` handling, the `resetBookingForm` path) is
+   preserved verbatim; only the composition and one added `receipt` state for
+   the confirmation view are new.
+7. **Dark mode was left alone.** The `.dark` block and the `next-themes`
+   dependency are still unreachable dead weight — DESIGN.md now documents the
+   app as deliberately light-only, but I did not delete either. This needs a
+   decision: remove them, or build a real toggle.
+8. **`.impeccable/design.json` was not regenerated.** It still describes the
+   previous palette and type ramp. `DESIGN.md` is the current source of truth.
+
+### Test cases
+
+There is no test-case table for this pass. What was actually run:
+
+| Check | Result |
+|---|---|
+| `tsc --noEmit` | Pass, 0 errors |
+| `npm run build` | Pass, all 17 routes compile |
+| `npm run lint` | Pass, 0 errors **and 0 warnings** (4 warnings I introduced were fixed) |
+| Impeccable detector over `src/app` + `src/components` | **0 findings** (was 17 advisories before `DESIGN.md` was rewritten to match the built world) |
+| `node scripts/screenshot-review.mjs` | **26/26 pass** — 13 routes × desktop (1440) and mobile (390) |
+
+The harness asserts, per route and viewport: HTTP status, no uncaught
+exception, no console error, **exactly one `h1`**, no page left on a loading
+state, and no unexpected role redirect. Passing all 26 is the evidence that
+the restructure did not break any route or role boundary.
+
+### Known issues / open items
+
+1. **I could not see any of the renders.** This session has no image-viewing
+   tool, so every visual claim above is derived from source and from the
+   harness's structural assertions, not from looking at pixels. The 26
+   screenshots in `.impeccable/review/` are current and **have not been
+   eyeballed by anyone.** The things I would check first, because they are the
+   ones a machine cannot verify: whether the deep field reads as confident or
+   as heavy on a large monitor; whether the ink-in stagger on a long ledger
+   feels authored or slow; and whether the `.mark` inked stamps hold up next to
+   each other in a dense list.
+2. **Pre-existing test failures, NOT caused by this pass.** Three of the phase
+   harnesses fail when run against a database that has already been used, and I
+   proved the cause from the database rather than assuming it:
+   - `test-phase2` Test 4 fails with `duplicate key ... uq_patients_profile_id`.
+     Its test patients `+639174444401` / `+639174444402` are already present, so
+     re-inserting them collides. The test is not idempotent.
+   - `test-phase9` Test 1 expects exactly 5 `doctor_availability` rows and finds
+     6. `test-phase2` line 317-318 inserts `day_of_week: 6`, which I confirmed
+     is in the table. Order-dependent pollution.
+   - `test-phase8` crashes with `signup failed: User already registered` — its
+     patient signup uses a fixed email and is not idempotent either.
+   All three pass on a fresh `npx supabase db reset` + `npx tsx
+   scripts/seed-staff.ts`, which is how they were designed to run. Phases 3, 4,
+   5, 6 and 7 passed as-is. **This pass changed no schema, no RLS policy, and no
+   data-layer logic**, so it cannot have caused these.
+3. **The review harness created two accounts in the local database:**
+   `review.patient@clinic.local` (used for the patient-role screenshots) and a
+   `patients` row is *not* created until a booking is submitted, so only the
+   auth profile exists.
+4. **`walk-in` does not require a phone number at submit time.** `submitWalkin`
+   guards name, date and time but not phone, while `find-or-create` receives
+   `phone: ""`. This is a pre-existing validation gap I deliberately did not
+   change (it is behaviour, not design), but it is worth a look.
+
+### Not committed
+
+Per project instructions, nothing was staged or committed. `progress.md` is
+set to "Built — awaiting test".

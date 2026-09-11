@@ -8,13 +8,7 @@ import {
   type CreateAppointmentInput,
 } from "@/lib/booking/create-appointment";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,6 +21,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { useAppointments } from "@/hooks/use-appointments";
+import { PageMasthead } from "@/components/console/page-masthead";
+import { StepRail, type Step } from "@/components/console/step-rail";
+import { formatDateLong, formatTime12h } from "@/lib/utils";
+import { BadgeCheck, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function WalkInPage() {
   const supabase = createClient();
@@ -147,48 +146,86 @@ export default function WalkInPage() {
     }
   }
 
+  const patientDone = Boolean(wiPhone.trim() && wiFullName.trim());
+  const timeDone = Boolean(wiDate && wiSlot);
+  const steps: Step[] = [
+    {
+      label: "The patient",
+      hint: wiExisting ? "Existing record in use" : "Look up the number first",
+      state: patientDone ? "done" : "current",
+    },
+    {
+      label: "When they are being seen",
+      hint: !patientDone ? "After the patient details" : timeDone ? undefined : "Pick a day and time",
+      state: !patientDone ? "todo" : timeDone ? "done" : "current",
+    },
+    {
+      label: "Payment and confirm",
+      hint: "Confirms instantly — no request stage",
+      state: timeDone ? "current" : "todo",
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1
-          className="text-2xl font-semibold tracking-tight"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          Walk-in Registration
-        </h1>
-      </header>
+      <PageMasthead
+        meta="Front desk"
+        title="Register a walk-in"
+        lead="Take the booking and the payment in one pass. Walk-ins are confirmed immediately, so the slot is held the moment you finish."
+      />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
-        <Card className="shadow-warm">
+      <StepRail steps={steps} />
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-[var(--primary-foreground)]">
+            <CardTitle className="flex items-center gap-2.5">
+              <span
+                aria-hidden
+                className="figure grid size-6 place-items-center rounded-md border border-border text-xs text-muted-foreground"
+              >
                 1
               </span>
-              Patient
+              The patient
             </CardTitle>
-            <CardDescription>
-              {wiExisting
-                ? "Existing record loaded — reuse, no duplicate."
-                : "New walk-in — record created on submit."}
-            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex items-end gap-2">
-              <div className="flex flex-1 flex-col gap-1">
-                <Label htmlFor="wi-phone">Phone</Label>
+          <CardContent className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="wi-phone">Mobile number</Label>
+              <div className="flex gap-2">
                 <Input
                   id="wi-phone"
+                  type="tel"
+                  inputMode="tel"
                   value={wiPhone}
                   onChange={(e) => setWiPhone(e.target.value)}
                   placeholder="09xx xxx xxxx"
+                  className="flex-1"
                 />
+                <Button variant="outline" onClick={lookupPhone} className="gap-1.5">
+                  <Search className="size-3.5" aria-hidden="true" />
+                  Look up
+                </Button>
               </div>
-              <Button variant="secondary" onClick={lookupPhone}>
-                Look up
-              </Button>
+              <p
+                className={cn(
+                  "mt-1 flex items-start gap-2 text-xs text-pretty",
+                  wiExisting ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                {wiExisting ? (
+                  <>
+                    <BadgeCheck className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+                    Existing record found — it will be reused, so this patient
+                    never ends up with two files.
+                  </>
+                ) : (
+                  "Look up the number before filling anything in. One person keeps exactly one record."
+                )}
+              </p>
             </div>
-            <div className="flex flex-col gap-1">
+
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="wi-name">Full name</Label>
               <Input
                 id="wi-name"
@@ -196,7 +233,7 @@ export default function WalkInPage() {
                 onChange={(e) => setWiFullName(e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="wi-email">Email (optional)</Label>
               <Input
                 id="wi-email"
@@ -205,38 +242,43 @@ export default function WalkInPage() {
                 onChange={(e) => setWiEmail(e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="wi-dob">Date of birth (optional)</Label>
-              <Input
-                id="wi-dob"
-                type="date"
-                value={wiDob}
-                onChange={(e) => setWiDob(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="wi-address">Address (optional)</Label>
-              <Textarea
-                id="wi-address"
-                rows={2}
-                value={wiAddress}
-                onChange={(e) => setWiAddress(e.target.value)}
-              />
+            <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-1">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="wi-dob">Date of birth (optional)</Label>
+                <Input
+                  id="wi-dob"
+                  type="date"
+                  value={wiDob}
+                  onChange={(e) => setWiDob(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="wi-address">Address (optional)</Label>
+                <Textarea
+                  id="wi-address"
+                  rows={2}
+                  className="sm:min-h-[2.25rem]"
+                  value={wiAddress}
+                  onChange={(e) => setWiAddress(e.target.value)}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-warm">
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-[var(--primary-foreground)]">
+            <CardTitle className="flex items-center gap-2.5">
+              <span
+                aria-hidden
+                className="figure grid size-6 place-items-center rounded-md border border-border text-xs text-muted-foreground"
+              >
                 2
               </span>
-              Schedule
+              When they are being seen
             </CardTitle>
-            <CardDescription>Pick a date, then an open slot.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center gap-3">
+          <CardContent>
             <SlotPicker
               date={wiDate}
               onDateChange={onPickDate}
@@ -246,21 +288,23 @@ export default function WalkInPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-warm">
+        {/* Gold belongs on this card: it is where the money is taken. */}
+        <Card className="relative overflow-hidden">
+          <span aria-hidden className="rule-gold absolute inset-x-0 top-0 h-px" />
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--gold)] text-xs font-bold text-[var(--gold-foreground)]">
+            <CardTitle className="flex items-center gap-2.5">
+              <span
+                aria-hidden
+                className="figure grid size-6 place-items-center rounded-md border border-[var(--gold)] text-xs text-[var(--gold-ink)]"
+              >
                 3
               </span>
-              Confirm &amp; pay
+              Payment and confirm
             </CardTitle>
-            <CardDescription>
-              Walk-ins are confirmed immediately with payment.
-            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="wi-reason">Reason (optional)</Label>
+          <CardContent className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="wi-reason">Reason for the visit (optional)</Label>
               <Textarea
                 id="wi-reason"
                 rows={2}
@@ -268,7 +312,7 @@ export default function WalkInPage() {
                 onChange={(e) => setWiReason(e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <Label>Payment method</Label>
               <Select
                 value={wiMethod}
@@ -283,28 +327,54 @@ export default function WalkInPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="wi-ref">Payment reference</Label>
               <Input
                 id="wi-ref"
                 value={wiReference}
                 onChange={(e) => setWiReference(e.target.value)}
-                placeholder="e.g. receipt # / GCash ref"
+                placeholder="Receipt number, or GCash reference"
               />
+              <p className="text-xs text-muted-foreground">
+                Optional, but this is the only record that payment was taken.
+              </p>
             </div>
+
+            <dl className="mt-1 flex flex-col gap-2 rounded-lg border border-border bg-muted/40 px-3 py-3 text-xs">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-meta text-muted-foreground uppercase">Patient</dt>
+                <dd className="truncate">
+                  {wiFullName.trim() || <span className="text-muted-foreground">Not set</span>}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-meta text-muted-foreground uppercase">When</dt>
+                <dd className="figure text-right">
+                  {wiDate && wiSlot ? (
+                    <>
+                      {formatDateLong(toDateInput(wiDate))}
+                      <span className="mt-0.5 block">{formatTime12h(wiSlot)}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Not set</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-meta text-muted-foreground uppercase">Record</dt>
+                <dd>
+                  {wiExisting ? "Reusing existing" : "Creating new"}
+                </dd>
+              </div>
+            </dl>
+
             <Button
               onClick={submitWalkin}
               disabled={wiSubmitting || !wiDate || !wiSlot || !wiFullName.trim()}
-              className="w-full"
+              className="h-10 w-full"
             >
-              {wiSubmitting ? "Booking…" : "Book & confirm"}
+              {wiSubmitting ? "Booking…" : "Book & confirm now"}
             </Button>
-            {wiSlot && wiDate && (
-              <p className="text-xs text-muted-foreground">
-                Booking {toDateInput(wiDate)} at {wiSlot}
-                {wiExisting ? " for existing patient" : " as new patient"}.
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>

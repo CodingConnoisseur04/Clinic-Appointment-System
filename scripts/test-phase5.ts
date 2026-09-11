@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+import { resetTestState } from "./test-support";
 import { createAppointment } from "@/lib/booking/create-appointment";
 import { findOrCreatePatient } from "@/lib/patients/find-or-create-patient";
 
@@ -82,6 +84,9 @@ const MON = "2026-11-02"; // fresh week, clear of other suites
 const PW = "test-password-123";
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // ---- Test 1: fresh signup has no patients row; find-or-create makes one -
   const pA = await signUpPatient("p5-a@test.local", PW, "P5 A", "+639195555001");
   const preCheck = await admin

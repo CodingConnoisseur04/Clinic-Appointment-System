@@ -18,6 +18,13 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        /* For actions sitting on the deep field (mastheads, public hero). */
+        field:
+          "bg-field-foreground text-field hover:bg-field-foreground/88 focus-visible:border-field-foreground focus-visible:ring-field-foreground/40",
+        "field-outline":
+          "border-field-border bg-transparent text-field-foreground hover:bg-field-foreground/12 focus-visible:border-field-foreground focus-visible:ring-field-foreground/30",
+        /* Money and time are the front desk's two currencies; they get gold. */
+        gold: "bg-gold text-gold-foreground hover:bg-gold/85 focus-visible:border-gold focus-visible:ring-gold/40",
       },
       size: {
         default:

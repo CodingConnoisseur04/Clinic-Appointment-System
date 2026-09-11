@@ -5,6 +5,8 @@ import {
   type SupabaseClient,
 } from "@supabase/supabase-js";
 
+import { resetTestState } from "./test-support";
+
 function loadEnvLocal() {
   let file: string;
   try {
@@ -221,6 +223,9 @@ const FRI = "2026-09-04";
 const PW = "test-password-123";
 
 async function main() {
+  // Idempotent: clear anything a previous harness run left behind.
+  await resetTestState();
+
   // ---- Test 1: uq_patients_profile_id holds --------------------------------
   const pA = await sessionFor("p3-a@test.local", PW, { full_name: "P3 A", phone: "+639181111001" });
   const pB = await sessionFor("p3-b@test.local", PW, { full_name: "P3 B", phone: "+639181111002" });
