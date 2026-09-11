@@ -48,10 +48,11 @@ state, no wrong-role redirect).
 
 **Nobody has looked at the screenshots yet** — this session had no image
 viewing, so `.impeccable/review/*.png` (26 files, current) still needs human
-eyes. Three items also need a decision; they are listed under "Deviations from
-spec" and "Known issues" in the changelog, the two biggest being the public
-phone number (I hide it rather than print the placeholder) and whether to
-finally remove or wire up the unreachable dark mode.
+eyes. Of the three items that needed a decision, one is now closed: the
+unreachable dark mode was removed (`.dark` block + `next-themes` dep; the
+`@custom-variant` override stays as a safety guard — see changelog deviation
+7). Still open: the public phone number (I hide it rather than print the
+placeholder) and the stale `.impeccable/design.json` sidecar.
 
 Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named
 `phase-10-deployment.md`.

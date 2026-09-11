@@ -1226,10 +1226,14 @@ and from prior behaviour that the human should rule on:
    `createAppointment`, `SLOT_TAKEN` handling, the `resetBookingForm` path) is
    preserved verbatim; only the composition and one added `receipt` state for
    the confirmation view are new.
-7. **Dark mode was left alone.** The `.dark` block and the `next-themes`
-   dependency are still unreachable dead weight — DESIGN.md now documents the
-   app as deliberately light-only, but I did not delete either. This needs a
-   decision: remove them, or build a real toggle.
+7. **Dark mode removal — RESOLVED (2026-09-11, human decision: remove).** The
+   `.dark` token block from Phase 1 and the `next-themes` dependency (added
+   Phase 4, never provided) were both removed in this pass's commit
+   (e023256); `npm ls next-themes` is empty and no `ThemeProvider` exists.
+   Deliberately KEPT: the `@custom-variant dark (&:is(.dark *))` override in
+   `globals.css` — deleting it would switch Tailwind v4's default variant to
+   `prefers-color-scheme`, silently turning shadcn's inert `dark:` utilities
+   ON for OS-dark users against a palette with no dark tokens.
 8. **`.impeccable/design.json` was not regenerated.** It still describes the
    previous palette and type ramp. `DESIGN.md` is the current source of truth.
 
