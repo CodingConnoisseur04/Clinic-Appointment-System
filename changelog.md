@@ -1265,6 +1265,8 @@ the restructure did not break any route or role boundary.
    as heavy on a large monitor; whether the ink-in stagger on a long ledger
    feels authored or slow; and whether the `.mark` inked stamps hold up next to
    each other in a dense list.
+   **Resolution (2026-09-11):** human reviewed the running app and reports
+   "all works well" — no objections on any of the three concerns above.
 2. **Pre-existing test failures, NOT caused by this pass.** Three of the phase
    harnesses fail when run against a database that has already been used, and I
    proved the cause from the database rather than assuming it:
@@ -1289,7 +1291,12 @@ the restructure did not break any route or role boundary.
    `phone: ""`. This is a pre-existing validation gap I deliberately did not
    change (it is behaviour, not design), but it is worth a look.
 
-### Not committed
+### Commit record
 
-Per project instructions, nothing was staged or committed. `progress.md` is
-set to "Built — awaiting test".
+- `e023256` — this pass's code (52 files), including the `.gitignore` addition
+  for `.impeccable/review/` (regenerable screenshots kept out of git).
+- `61b1925` — doc correction: deviation 7 had claimed the dark-mode block and
+  `next-themes` were left in place; both had in fact shipped removed in
+  `e023256`.
+- Human tested 2026-09-11 and reports all works well. `progress.md` set to
+  Closed; the closing status update itself commits on the human's word.

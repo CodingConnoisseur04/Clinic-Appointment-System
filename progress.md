@@ -21,9 +21,10 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 
 ## Current focus
 
-**Design pass 2 — "Warm Confidence" deepened: Built — awaiting test.** Not a
-phase and has no spec; see `changelog.md` → "Design pass 2". All 13 rendered
-routes rebuilt as one system on the existing palette rather than a new one.
+**Design pass 2 — "Warm Confidence" deepened: Closed — human tested
+2026-09-11 ("all works well").** Not a phase and has no spec; see
+`changelog.md` → "Design pass 2". All 13 rendered routes rebuilt as one system
+on the existing palette rather than a new one.
 
 - The palette now **owns regions** instead of scattering accents: a deep forest
   field (`--field`, a darker step of the existing primary ramp) carries the
@@ -46,13 +47,12 @@ Verification: build clean, lint clean (0 warnings), detector 0 findings, and
 asserts HTTP status, no console/page errors, exactly one `h1`, no stuck loading
 state, no wrong-role redirect).
 
-**Nobody has looked at the screenshots yet** — this session had no image
-viewing, so `.impeccable/review/*.png` (26 files, current) still needs human
-eyes. Of the three items that needed a decision, one is now closed: the
-unreachable dark mode was removed (`.dark` block + `next-themes` dep; the
-`@custom-variant` override stays as a safety guard — see changelog deviation
-7). Still open: the public phone number (I hide it rather than print the
-placeholder) and the stale `.impeccable/design.json` sidecar.
+**Human reviewed 2026-09-11 — passed** ("all works well"); the screenshot
+eyeball gate is closed. Of the three items that needed a decision, one is
+closed: the unreachable dark mode was removed (`.dark` block + `next-themes`
+dep; the `@custom-variant` override stays as a safety guard — see changelog
+deviation 7). Still open: the public phone number (I hide it rather than print
+the placeholder) and the stale `.impeccable/design.json` sidecar.
 
 Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named
 `phase-10-deployment.md`.
