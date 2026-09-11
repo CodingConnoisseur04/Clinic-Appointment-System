@@ -84,7 +84,7 @@ export default function PatientAppointmentsPage() {
             <StatusMark status={row.status} />
             {row.status === "PENDING" && (
               <span className="text-xs text-muted-foreground">
-                Waiting on the front desk — nothing is confirmed yet
+                Waiting on the front desk, nothing is confirmed yet
               </span>
             )}
           </div>
@@ -111,7 +111,7 @@ export default function PatientAppointmentsPage() {
       <PageMasthead
         meta="Your records"
         title="My appointments"
-        lead="Everything you have requested or booked with the clinic. To move or cancel one, call the front desk — changes are always handled by staff, never from here."
+        lead="Everything you have requested or booked with the clinic. To move or cancel one, call the front desk: changes are always handled by staff, never from here."
         actions={
           <Link
             href="/patient/book"

@@ -81,7 +81,7 @@ export default function SettingsPage() {
               <p className="text-pretty">
                 This is still the placeholder number. Patients see it on the
                 clinic&apos;s public page, where a number that looks made up costs
-                trust — replace it with the real line.
+                trust. Replace it with the real line.
               </p>
             </div>
           )}

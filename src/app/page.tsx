@@ -18,7 +18,11 @@
  */
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getClinicSettings, isPlaceholderPhone } from "@/lib/clinic-settings";
+import {
+  getClinicSettings,
+  isPlaceholderPhone,
+  PLACEHOLDER_PHONE,
+} from "@/lib/clinic-settings";
 import { CLINIC } from "@/lib/brand";
 import { buttonVariants } from "@/components/ui/button";
 import { ClinicSeal } from "@/components/clinic-seal";
@@ -118,7 +122,7 @@ const STEPS = [
   {
     n: "02",
     title: "The front desk calls you",
-    body: "A real person arranges payment with you — cash or GCash — and answers anything you need to ask.",
+    body: "A real person arranges payment with you cash or GCash and answers anything you need to ask.",
   },
   {
     n: "03",
@@ -183,7 +187,7 @@ export default async function LandingPage() {
             </h1>
             <p className="text-lead mt-5 max-w-prose text-pretty text-field-muted">
               {CLINIC.tagline} Appointments are requested online and confirmed by
-              our front desk — so the time you get is a time we have actually
+              our front desk so the time you get is a time we have actually
               checked, every single day.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -311,7 +315,7 @@ export default async function LandingPage() {
               </p>
               <p className="mt-4 text-sm text-pretty text-stone-700">
                 Every appointment is with the same physician who knows your
-                family&apos;s history — from routine checkups to minor procedures,
+                family&apos;s history from routine checkups to minor procedures,
                 care stays personal and continuous.
               </p>
             </section>
@@ -340,9 +344,15 @@ export default async function LandingPage() {
                       {clinicSettings.receptionist_phone}
                     </a>
                   ) : (
-                    <p className="mt-1.5 text-sm text-muted-foreground">
-                      Line to be posted — walk in, or book a request online.
-                    </p>
+                    <div className="mt-1.5">
+                      <p className="figure text-sm text-muted-foreground">
+                        {PLACEHOLDER_PHONE}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground/80">
+                        Sample number, for illustration. The clinic&apos;s real
+                        line will be posted here once set.
+                      </p>
+                    </div>
                   )}
                 </div>
                 <div>

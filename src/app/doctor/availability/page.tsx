@@ -124,7 +124,7 @@ export default function AvailabilityPage() {
     if (result.success) {
       if (result.conflictingAppointments > 0) {
         toast.warning(
-          `Saved — ${result.conflictingAppointments} confirmed appointment(s) now fall outside these hours.`
+          `Saved. ${result.conflictingAppointments} confirmed appointment(s) now fall outside these hours.`
         );
       } else {
         toast.success("Working hours saved.");

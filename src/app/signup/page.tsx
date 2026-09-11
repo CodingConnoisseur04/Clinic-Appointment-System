@@ -64,7 +64,7 @@ export default function SignupPage() {
       if (error || !data.session) {
         setError(
           error?.message.includes("already") ?? false
-            ? "An account with this email already exists — sign in instead."
+            ? "An account with this email already exists, sign in instead."
             : (error?.message ?? "We could not create the account. Try again.")
         );
         return;

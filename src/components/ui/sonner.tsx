@@ -6,7 +6,7 @@ import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon
 /*
  * The app is light-only by design: this is a daylight clinic and the world has
  * no dark rendition, so this is pinned rather than derived. It used to read the
- * theme from next-themes, which had no provider in this app — so toasts came out
+ * theme from next-themes, which had no provider in this app so toasts came out
  * dark-on-light for anyone whose OS is in dark mode. The dependency is gone.
  */
 const Toaster = ({ ...props }: ToasterProps) => {

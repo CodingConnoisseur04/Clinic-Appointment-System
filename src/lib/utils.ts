@@ -40,6 +40,13 @@ export function formatDayHeading(iso: string): string {
   return format(parseDateOnly(iso), "EEEE d MMMM")
 }
 
+/** Ledger day-group heading: "Today", or just the full date. Never both —
+ *  the relative word and the long date carry the same information. */
+export function dayGroupHeading(iso: string): string {
+  const label = relativeDayLabel(iso)
+  return label === formatDateShort(iso) ? label : formatDayHeading(iso)
+}
+
 /** Today as "YYYY-MM-DD" in the viewer's own timezone. */
 export function todayIso(): string {
   const d = new Date()

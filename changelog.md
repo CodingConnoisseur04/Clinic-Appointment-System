@@ -1203,12 +1203,13 @@ left alone.)
 No spec governs this pass, so these are deviations from the **Phase 9 spec**
 and from prior behaviour that the human should rule on:
 
-1. **Public phone number.** The Phase 9 spec said to show a placeholder like
-   `(088) 000-0000` "clearly marked as illustrative". I instead show no number
-   and state that the line is to be posted, reasoning that a number that looks
-   made up on the trust page costs more than a missing one. **If the spec's
-   intent was to display a marked placeholder, this is the divergence to
-   reverse** — it is a two-line change in `src/app/page.tsx`.
+1. **Public phone number — RESOLVED (2026-09-11, human decision: revert to
+   spec behavior).** The landing page again shows the illustrative number
+   `(088) 000-0000` per the Phase 9 spec, now clearly marked "Sample number,
+   for illustration" and rendered as plain text rather than a `tel:` link so
+   the placeholder is never callable. It is still replaced by the real
+   `tel:`-linked number the moment the clinic sets one in Settings
+   (`isPlaceholderPhone` gate unchanged).
 2. **The SMS report is now rendered.** Phase 8 built and tested `getSmsReport`,
    and `progress.md` describes three receptionist reports, but only two were
    ever surfaced in the UI. It now has a panel on the Reports page. This is a
@@ -1234,8 +1235,12 @@ and from prior behaviour that the human should rule on:
    `globals.css` — deleting it would switch Tailwind v4's default variant to
    `prefers-color-scheme`, silently turning shadcn's inert `dark:` utilities
    ON for OS-dark users against a palette with no dark tokens.
-8. **`.impeccable/design.json` was not regenerated.** It still describes the
-   previous palette and type ramp. `DESIGN.md` is the current source of truth.
+8. **`.impeccable/design.json` — RESOLVED (2026-09-11).** Regenerated to
+   mirror the built world: field/gold-ink/board/highlight tokens, the ten type
+   registers, real shadow and motion values, squared StatusMarks replacing the
+   banned pills, and the current named rules (Gold Has a Job, Two-Zone,
+   Mono-For-Figures, No Glass). DESIGN.md remains the source of truth; the
+   sidecar now agrees with it.
 
 ### Test cases
 
@@ -1300,3 +1305,52 @@ the restructure did not break any route or role boundary.
   `e023256`.
 - Human tested 2026-09-11 and reports all works well. `progress.md` set to
   Closed; the closing status update itself commits on the human's word.
+
+---
+
+## Copy pass — em dashes removed from UI, day headings de-duplicated
+**Date:** 2026-09-11
+**Branch:** main (uncommitted at time of writing)
+**Spec:** none — ad-hoc copy work requested by the human.
+
+### What was built
+1. **All visible em dashes removed from UI copy** across 12 files: toast
+   messages, dialog bodies, masthead leads, helper lines, and the landing
+   page's sample-phone note. Each sentence was re-read and rewritten with a
+   period, comma, colon, or parentheses as the sentence required; no blind
+   character swaps. Code comments were deliberately left untouched (not
+   user-visible). SMS message bodies were checked and are already clean.
+2. **Day-heading bug fixed (human-reported).** Ledger day-group headings on
+   `receptionist/appointments` and `doctor/schedule` rendered
+   "Mon 14 Dec · Monday 14 December": `relativeDayLabel()` returns the short
+   date as its fallback for non-adjacent days, and the heading template
+   appended the long-form date unconditionally. New shared
+   `dayGroupHeading()` in `src/lib/utils.ts` renders "Today" (etc.) for
+   adjacent days, otherwise just the full date — never both. Both call sites
+   now use it.
+3. **Repaired two broken sentences** left by an earlier interrupted edit on
+   `patient/book` ("arranged with the clinic cash or GCash" now reads
+   "(cash or GCash)").
+4. **SMS `provider_response` now records what the provider actually said**
+   (`send-confirmation.ts` + the reminder route): `message_id=<id>` on
+   acceptance, `error: <message>` on failure, instead of the generic
+   "accepted by provider" / "send failed". Failed sends also log to console.
+   Behaviour and `sms_logs` row shape unchanged; delivery problems are now
+   diagnosable from the table without re-running the send.
+
+### Files touched
+- `src/lib/utils.ts` (new `dayGroupHeading()`)
+- `src/app/page.tsx`, `src/app/signup/page.tsx`,
+  `src/app/patient/{book,appointments}/page.tsx`,
+  `src/app/receptionist/{appointments,pending,reports,settings,walk-in}/page.tsx`,
+  `src/app/doctor/{schedule,availability}/page.tsx`,
+  `src/components/booking/slot-picker.tsx`, `src/components/ui/sonner.tsx`
+  `src/lib/sms/send-confirmation.ts`,
+  `src/app/api/cron/send-reminders/route.ts` (provider_response detail, item 4)
+
+### Deviations from spec
+None — ad-hoc work outside any phase spec.
+
+### Verification
+`tsc --noEmit` clean; `npm run lint` clean; screenshot harness **26/26**
+(13 routes × desktop + mobile).

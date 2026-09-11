@@ -82,14 +82,14 @@ export default function WalkInPage() {
       setWiEmail(data.email ?? "");
       setWiDob(data.date_of_birth ?? "");
       setWiAddress(data.address ?? "");
-      toast.info("Existing patient record found — details loaded.");
+      toast.info("Existing patient record found, details loaded.");
     } else {
       setWiExisting(false);
       setWiFullName("");
       setWiEmail("");
       setWiDob("");
       setWiAddress("");
-      toast.info("No existing record — a new one will be created.");
+      toast.info("No existing record. A new one will be created.");
     }
   }
 
@@ -161,7 +161,7 @@ export default function WalkInPage() {
     },
     {
       label: "Payment and confirm",
-      hint: "Confirms instantly — no request stage",
+      hint: "Confirms instantly, no request stage",
       state: timeDone ? "current" : "todo",
     },
   ];
@@ -216,7 +216,7 @@ export default function WalkInPage() {
                 {wiExisting ? (
                   <>
                     <BadgeCheck className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-                    Existing record found — it will be reused, so this patient
+                    Existing record found. It will be reused, so this patient
                     never ends up with two files.
                   </>
                 ) : (

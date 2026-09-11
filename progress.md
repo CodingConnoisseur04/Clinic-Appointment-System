@@ -48,11 +48,12 @@ asserts HTTP status, no console/page errors, exactly one `h1`, no stuck loading
 state, no wrong-role redirect).
 
 **Human reviewed 2026-09-11 — passed** ("all works well"); the screenshot
-eyeball gate is closed. Of the three items that needed a decision, one is
-closed: the unreachable dark mode was removed (`.dark` block + `next-themes`
-dep; the `@custom-variant` override stays as a safety guard — see changelog
-deviation 7). Still open: the public phone number (I hide it rather than print
-the placeholder) and the stale `.impeccable/design.json` sidecar.
+eyeball gate is closed. All three items that needed a decision are resolved:
+the unreachable dark mode was removed (`.dark` block + `next-themes` dep; the
+`@custom-variant` override stays as a safety guard), the landing page shows
+the clearly-marked sample phone per the Phase 9 spec again, and
+`.impeccable/design.json` was regenerated to mirror the built world. See
+changelog deviations 1, 7 and 8.
 
 Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named
 `phase-10-deployment.md`.

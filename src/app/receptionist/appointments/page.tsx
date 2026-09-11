@@ -28,10 +28,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppointments, type AppointmentRow } from "@/hooks/use-appointments";
 import {
+  dayGroupHeading,
   formatDateLong,
-  formatDayHeading,
   formatTime12h,
-  relativeDayLabel,
   todayIso,
 } from "@/lib/utils";
 import {
@@ -101,7 +100,7 @@ export default function AppointmentsPage() {
       <PageMasthead
         meta="Records"
         title="All appointments"
-        lead="Every appointment, online or at the desk, kept for good — cancelling marks a record, it never deletes one. Mark attendance after each day so the no-show report stays honest."
+        lead="Every appointment, online or at the desk, kept for good. Cancelling marks a record, it never deletes one. Mark attendance after each day so the no-show report stays honest."
         actions={
           <a
             href="/receptionist/walk-in"
@@ -207,7 +206,7 @@ export default function AppointmentsPage() {
             grouped.map(({ date, rows }) => (
               <section key={date}>
                 <LedgerHeading trailing={`${rows.length} record${rows.length === 1 ? "" : "s"}`}>
-                  {relativeDayLabel(date)} · {formatDayHeading(date)}
+                  {dayGroupHeading(date)}
                 </LedgerHeading>
                 <ol>
                   {rows.map((row, i) => {

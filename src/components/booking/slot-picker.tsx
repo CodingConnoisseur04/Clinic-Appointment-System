@@ -116,7 +116,7 @@ export function SlotPicker({
 
           {!loading && slots.length === 0 && (
             <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-              No times open this day — the clinic is closed, or every slot is
+              No times open this day. The clinic is closed, or every slot is
               already taken. Try another day.
             </p>
           )}
@@ -150,7 +150,7 @@ export function SlotPicker({
               </div>
               <p className="text-xs text-pretty text-muted-foreground">
                 These times were open a moment ago. Submitting holds your time
-                while the front desk reviews it — if someone was already ahead
+                while the front desk reviews it. If someone was already ahead
                 of you, we&apos;ll ask you to pick another.
               </p>
             </>

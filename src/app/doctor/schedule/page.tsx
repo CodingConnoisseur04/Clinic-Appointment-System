@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  formatDayHeading,
+  dayGroupHeading,
   formatTime12h,
   relativeDayLabel,
   todayIso,
@@ -146,7 +146,7 @@ export default function SchedulePage() {
                   className={groupIndex === 0 ? undefined : "mt-8"}
                   trailing={`${rows.length} patient${rows.length === 1 ? "" : "s"}`}
                 >
-                  {relativeDayLabel(date)} · {formatDayHeading(date)}
+                  {dayGroupHeading(date)}
                 </LedgerHeading>
                 <ol>
                   {rows.map((row, i) => (

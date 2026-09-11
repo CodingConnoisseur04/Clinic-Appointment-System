@@ -293,6 +293,6 @@ Skeletons shaped like the content they replace: mono-width lines in a ledger, ti
 - **Don't** apply gold to decoration: a stray dot, a generic icon, a divider that means nothing.
 - **Don't** use pure white as a page background; the ground is cream.
 - **Don't** use gray shadows, `transition-all`, gradient text, glass, or decorative blur.
-- **Don't** render a placeholder value as if it were real. The public phone number is shown only when the clinic has actually set it; otherwise the page says so.
+- **Don't** render a placeholder value as if it were real. The public phone number shows the sample number only while clearly marked as illustrative (never as a `tel:` link); the real, linked number appears the moment the clinic sets one.
 - **Don't** add kicker lines, eyebrow labels, or section numbers above headings.
 - **Don't** repeat a page title in both the masthead and the first card.

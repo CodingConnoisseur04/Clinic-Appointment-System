@@ -74,7 +74,7 @@ export default function PendingPage() {
       <PageMasthead
         meta="Front desk"
         title="Requests to action"
-        lead="Online requests wait here until you decide. Confirm one once payment is arranged — confirming sets it to Confirmed and texts the patient. Cancelling frees the slot."
+        lead="Online requests wait here until you decide. Confirm one once payment is arranged: confirming sets it to Confirmed and texts the patient. Cancelling frees the slot."
       />
 
       {/*
@@ -105,7 +105,7 @@ export default function PendingPage() {
             ) : (
               <>
                 Confirmed, but the confirmation SMS failed for{" "}
-                {smsOutcome.name} — the failure is logged. Call them instead.
+                {smsOutcome.name}, the failure is logged. Call them instead.
               </>
             )}
           </p>
@@ -296,7 +296,7 @@ export default function PendingPage() {
             <DialogTitle>Cancel this request?</DialogTitle>
             <DialogDescription>
               This sets the appointment to Cancelled and frees the slot for
-              someone else. The patient is not texted automatically — call them.
+              someone else. The patient is not texted automatically, so call them.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

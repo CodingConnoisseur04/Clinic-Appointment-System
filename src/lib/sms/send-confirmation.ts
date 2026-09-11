@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { sendSms } from "@/lib/sms/send-sms";
+import { sendSms, type SendSmsResult } from "@/lib/sms/send-sms";
 import { CLINIC } from "@/lib/brand";
 import { formatTime12h } from "@/lib/utils";
 
@@ -17,10 +17,13 @@ export async function sendConfirmationSms(
   appointmentId: string,
   options?: { simulateFailure?: boolean }
 ): Promise<SendConfirmationResult> {
-  const delivered = await (async () => {
+  const attempt = await (async (): Promise<{
+    delivered: boolean;
+    send: SendSmsResult | null;
+  }> => {
     try {
       if (options?.simulateFailure) {
-        return false;
+        return { delivered: false, send: null };
       }
       const { data: appt, error: apptErr } = await supabase
         .from("appointments")
@@ -29,34 +32,49 @@ export async function sendConfirmationSms(
         )
         .eq("id", appointmentId)
         .single();
-      if (apptErr || !appt) return false;
+      if (apptErr || !appt) return { delivered: false, send: null };
 
       const phone =
         (appt.patients as unknown as { phone: string } | null)?.phone ?? null;
-      if (!phone) return false;
+      if (!phone) return { delivered: false, send: null };
 
       const result = await sendSms({
         number: phone,
         message: `${CLINIC.name}: your appointment on ${appt.appointment_date} at ${formatTime12h(appt.appointment_time)} is CONFIRMED. See you then!`,
       });
-      return result.success;
+      return { delivered: result.success, send: result };
     } catch {
-      return false;
+      return { delivered: false, send: null };
     }
   })();
+  const delivered = attempt.delivered;
+  const sendResult = attempt.send;
+
+  // provider_response records what the provider ACTUALLY said — message_id on
+  // acceptance, the verbatim error otherwise — so delivery problems can be
+  // diagnosed from this table without re-running the send.
+  const dryRun = process.env.SEMAPHORE_DRY_RUN === "true";
+  const providerResponse = delivered
+    ? dryRun
+      ? "dry-run success"
+      : sendResult && sendResult.success
+        ? `message_id=${sendResult.messageId}`
+        : "accepted by provider"
+    : options?.simulateFailure
+      ? "simulated failure"
+      : sendResult && !sendResult.success
+        ? `error: ${sendResult.error}`
+        : "send failed";
+  if (!delivered && !options?.simulateFailure && sendResult && !sendResult.success) {
+    console.error(`[sms] send failed: ${sendResult.error}`);
+  }
 
   // Log outcome; a logging failure must not throw either, but surface via log.
   const { error: logErr } = await supabase.from("sms_logs").insert({
     appointment_id: appointmentId,
     type: "confirmation",
     status: delivered ? "sent" : "failed",
-    provider_response: delivered
-      ? process.env.SEMAPHORE_DRY_RUN === "true"
-        ? "dry-run success"
-        : "accepted by provider"
-      : options?.simulateFailure
-        ? "simulated failure"
-        : "send failed",
+    provider_response: providerResponse,
   });
   if (logErr) {
     console.error(`[sms] failed to write sms_logs row: ${logErr.message}`);

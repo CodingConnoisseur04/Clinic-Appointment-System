@@ -71,7 +71,7 @@ export default function BookPage() {
 
     const { data } = await supabase.auth.getUser();
     if (!data.user || data.user.id !== profile.id) {
-      toast.error("Your session changed — reloading. Please try again.");
+      toast.error("Your session changed. Reloading, please try again.");
       router.refresh();
       return;
     }
@@ -108,7 +108,7 @@ export default function BookPage() {
         setReceipt({ date: requestedDate, time: requestedTime });
         resetBookingForm();
       } else if (result.reason === "SLOT_TAKEN") {
-        toast.error("That time was taken while you were typing — please pick another.");
+        toast.error("That time was taken while you were typing, please pick another.");
         resetBookingForm();
       } else {
         toast.error(`Could not submit request: ${result.message}`);
@@ -166,7 +166,7 @@ export default function BookPage() {
               <li className="flex gap-3">
                 <span className="figure text-xs text-muted-foreground">02</span>
                 <span>
-                  Payment is arranged with the clinic — cash or GCash. Nothing is
+                  Payment is arranged with the clinic (cash or GCash). Nothing is
                   charged on this site.
                 </span>
               </li>
@@ -198,7 +198,7 @@ export default function BookPage() {
       <PageMasthead
         meta="Request a visit"
         title="Pick a time that suits you"
-        lead="Send a request in three short steps. The front desk confirms it after arranging payment — requests are never confirmed instantly."
+        lead="Send a request in three short steps. The front desk confirms it after arranging payment; requests are never confirmed instantly."
         actions={
           <Link
             href="/patient/appointments"
@@ -309,7 +309,7 @@ export default function BookPage() {
                 <li className="flex gap-2.5">
                   <span className="figure text-meta">02</span>
                   <span>
-                    The front desk calls to arrange payment — cash or GCash.
+                    The front desk calls to arrange payment (cash or GCash).
                   </span>
                 </li>
                 <li className="flex gap-2.5">

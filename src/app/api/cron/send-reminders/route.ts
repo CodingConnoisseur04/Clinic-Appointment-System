@@ -88,7 +88,7 @@ export async function GET(request: Request) {
       provider_response: result.success
         ? process.env.SEMAPHORE_DRY_RUN === "true"
           ? "dry-run success"
-          : "accepted by provider"
+          : `message_id=${result.messageId}`
         : result.error,
     });
 

@@ -208,7 +208,7 @@ export default function ReportsPage() {
                     ]}
                   />
                   <p className="border-t border-border pt-4 text-xs text-pretty text-muted-foreground">
-                    “Never marked” is counted as a no-show here and only here —
+                    “Never marked” is counted as a no-show here and only here;
                     it is never written back onto those appointments. Once the
                     front desk marks attendance, this split stops guessing.
                   </p>
@@ -237,7 +237,7 @@ export default function ReportsPage() {
                       <span className="stat-figure-unit">%</span>
                     </p>
                     <p className="max-w-xs pb-1.5 text-xs text-pretty text-muted-foreground">
-                      reached the patient — {smsDelivered} of {smsTotal} texts
+                      reached the patient: {smsDelivered} of {smsTotal} texts
                       sent in this range.
                     </p>
                   </div>
