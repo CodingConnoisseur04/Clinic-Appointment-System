@@ -16,6 +16,7 @@ import {
   PageMasthead,
   MastheadStats,
 } from "@/components/console/page-masthead";
+import { CLINIC } from "@/lib/brand";
 import { EmptyState } from "@/components/console/empty-state";
 import { LedgerHeading } from "@/components/console/ledger";
 import { Phone } from "lucide-react";
@@ -72,6 +73,7 @@ export default function SchedulePage() {
       <PageMasthead
         meta={range === "today" ? relativeDayLabel(todayIso()) : "This week"}
         title="Your schedule"
+        image={CLINIC.images.consult}
         lead="Confirmed appointments only, as a read-only agenda. Attendance, cancellations and payment are handled at the front desk."
         actions={
           <>

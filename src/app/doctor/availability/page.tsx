@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateLong, relativeDayLabel, todayIso } from "@/lib/utils";
 import { PageMasthead } from "@/components/console/page-masthead";
+import { CLINIC } from "@/lib/brand";
 import { EmptyState } from "@/components/console/empty-state";
 import { LedgerHeading } from "@/components/console/ledger";
 import { cn } from "@/lib/utils";
@@ -177,6 +178,7 @@ export default function AvailabilityPage() {
       <PageMasthead
         meta="Consulting room"
         title="Working hours"
+        image={CLINIC.images.texture}
         lead="These hours are what generate the times patients can request. Save a row and you are warned immediately if a confirmed appointment now falls outside it."
       />
 

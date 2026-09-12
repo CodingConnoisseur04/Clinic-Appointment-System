@@ -9,6 +9,7 @@ import {
   todayIso,
 } from "@/lib/utils";
 import { PageMasthead } from "@/components/console/page-masthead";
+import { CLINIC } from "@/lib/brand";
 import { EmptyState } from "@/components/console/empty-state";
 import {
   Ledger,
@@ -111,6 +112,7 @@ export default function PatientAppointmentsPage() {
       <PageMasthead
         meta="Your records"
         title="My appointments"
+        image={CLINIC.images.waitingRoom}
         lead="Everything you have requested or booked with the clinic. To move or cancel one, call the front desk: changes are always handled by staff, never from here."
         actions={
           <Link

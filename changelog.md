@@ -1558,3 +1558,145 @@ human against the rebuilt database.
   `src/app/layout.tsx` — the standard mitigation for extension-injected root
   attributes. Scoped to `<html>` only, so genuine hydration mismatches
   elsewhere still surface. No behavior change.
+
+---
+
+## Design revamp 2 — "Warm Confidence", photographic (all pages + imagery)
+**Date:** 2026-09-12
+**Branch:** design-revamp-2 (committed and merged to main same day, on the
+human's review "looks good")
+**Spec:** none — ad-hoc design work requested by the human: "a revamp on the
+ design of all pages using skill impeccable, with images in the home page —
+ what new hypothetical users would see to avail the service". Three decisions
+ taken up front via questions: **new imagery-led world** (replace, not
+ deepen), **Filipino clinic life** photography, images **everywhere they
+ fit**.
+
+### Where the images came from
+All seven photographs are from **Pexels** under the Pexels License (free for
+commercial use, modification allowed, **no attribution required** — credits
+provided as a courtesy anyway). Sourcing method, honestly stated: Pexels' HTML
+pages are Cloudflare-gated against scripted access, so photos were located via
+web search (subject + `site:pexels.com`), downloaded straight from the
+`images.pexels.com` CDN (not gated; verified 200 image/jpeg), and validated
+with `file` (all real JPEGs, correct orientations). Provenance for every file
+is in `public/images/CREDITS.md` with its canonical page URL; photographer
+names recorded where they could be verified from third-party citations
+(cottonbro studio, Los Muertos Crew); the others are marked honestly as
+unverified-by-name with the URL as the record. **The doctor portrait was shot
+in Davao, Philippines** — the closest honest match for a Cagayan de Oro
+family-medicine physician.
+
+### What was built
+
+**1. Photography as a material, by rule.** Three new named rules in
+DESIGN.md's Imagery section: *Photo Serves the Story* (people and places of
+clinic life, never abstract glamour), *Merge, Don't Paste* (photos touching
+the deep field blend into it with a gradient; on cream they sit as rounded
+paper objects), and *Honest Faces* (these are models, not the real clinic's
+people; the portrait always carries a visible "Photograph for illustration"
+note; provenance in CREDITS.md). Plus an alt-text rule: if it could not be
+described to a blind caller over the phone, it does not ship.
+
+**2. `CLINIC.images` (brand.ts).** Single source of truth: seven entries with
+src/alt (+ `note` on the portrait), so every image is referenced through the
+brand object and alt text is written once, next to provenance.
+
+**3. The landing page rebuilt around imagery** (`src/app/page.tsx`). Same
+live-data logic (hours from `doctor_availability`, phone gating), new
+composition: the hero is now two-column — display-scale name and the honest
+three-step flow on the left, the hero photograph framed as a window into the
+consult room (`rounded-2xl`, warm border, field-tinted gradient at its foot,
+`priority`-loaded) on the right. The three pinned notices now carry their own
+photographs (blood-pressure check for services, waiting room for hours, the
+Davao portrait for the doctor, with the illustration note). The closing
+"Ready when you are." band stands inside the consult photo, merged into the
+field by a left gradient. The previous design contract explicitly refused a
+stock-photo hero; that contract comment was rewritten, and the reversal was
+the human's explicit choice in this pass.
+
+**4. `PageMasthead` gained an `image` slot** — the photograph occupies the
+right column on desktop and a bottom band on mobile, merged into the deep
+field by a left gradient (`from-[var(--field)]` → transparent), `sizes`
+optimized for the narrow column. Pages choose their own subject:
+
+| Page | Image | Why |
+|---|---|---|
+| Receptionist home | blood-pressure check | the day's care, at a glance |
+| Requests to action | reception counter | where requests land |
+| Walk-in registration | reception counter | where walk-ins happen |
+| Doctor schedule | consult photo | the doctor's own room |
+| Working hours | stethoscope texture | the consulting room, quiet |
+| Patient: My appointments | waiting room | the space they will sit in |
+| Patient booking receipt | family consult | warmth at the confirmation moment |
+
+Deliberately **without** images: All appointments, Reports, Settings (dense
+data surfaces — the Two-Zone Rule keeps records on calm cream), and the
+booking form's input masthead (the form is the content; its receipt gets the
+photo instead).
+
+**5. Auth panel texture.** The login/signup field panel now carries the
+stethoscope-on-wood photo at 13% opacity — texture felt more than seen, never
+competing with the form.
+
+### Files touched
+- `public/images/{hero-family,hero-doctor,doctor-portrait,bp-check,waiting-room,reception,texture-stethoscope}.jpg` (new) + `public/images/CREDITS.md` (new)
+- `src/lib/brand.ts` — `CLINIC.images` map + `ClinicImage` type
+- `src/components/console/page-masthead.tsx` — `image` slot with merge gradient
+- `src/components/auth/auth-shell.tsx` — field-panel texture layer
+- `src/app/page.tsx` — rebuilt hero/board/close with imagery
+- `src/app/{login,signup}` — unchanged code, new panel via AuthShell
+- `src/app/receptionist/{page,pending,walk-in}/page.tsx` — masthead images
+- `src/app/doctor/{schedule,availability}/page.tsx` — masthead images
+- `src/app/patient/{book,appointments}/page.tsx` — masthead images
+- `DESIGN.md` — Imagery section, three named rules, layout + Do/Don't updates
+
+### Deviations from spec
+None against a phase spec (none governs this pass). Against prior recorded
+design decisions, two reversals — both the human's explicit choices:
+1. The old design contract *refused* a stock-photo hero; this world is
+   imagery-led by request.
+2. The doctor portrait is a stand-in model (Davao shoot) — flagged in-app as
+   "Photograph for illustration". Phase 9's no-fabrication stance is preserved
+   by the visible note + the CREDITS.md honesty rule; replace before launch.
+
+### Test results
+
+| Check | Result |
+|---|---|
+| `tsc --noEmit` | Pass, 0 errors |
+| `npm run lint` | Pass, 0 errors, 0 warnings |
+| `npm run build` | Pass, all 17 routes compile |
+| `node scripts/screenshot-review.mjs` | **26/26 pass** (13 routes × desktop 1440 + mobile 390) |
+
+### Environment incident during verification (resolved)
+The harness initially could not sign in: the recent e2e smoke script had
+(re)created `receptionist@clinic.local` with password `test-password-123`
+while the screenshot harness (following `seed-staff.ts`) uses
+`dev-password-only`, and seed-staff's idempotent path never updates existing
+users' passwords. Fixed by a one-off service-role password alignment (script
+ran and was deleted), then `seed-staff.ts` re-run to create the missing
+doctor account. Convention note for the future: **staff/staging passwords are
+`dev-password-only`; if another script creates or resets those accounts, it
+must use the same password** (the smoke test's own constant is its own
+convention and now diverges — harmless, but worth unifying eventually).
+
+### Known issues / follow-ups
+1. **The screenshots have not been eyeballed by a human** — same honest limit
+   as Design pass 2: the harness asserts structure (status, console, single
+   h1, no stuck loading, no wrong-role redirect), not beauty. The 26 captures
+   are in `.impeccable/review/`. First things to eyeball: whether the hero
+   photo's field-tinted gradient reads as intentional on desktop; whether the
+   masthead merge gradient is strong enough to keep the mono stats legible;
+   whether the closing band's text holds contrast over the consult photo.
+2. Images total ~1.3 MB; `next/image` serves them resized (never larger than
+   the slot), so page weight is bounded, but real optimization (AVIF/WebP
+   pipeline) is a Phase 10/deployment concern.
+3. The doctor portrait's EXIF says 1200×1598; `next/image` handles the
+   object-position crop, but if the real physician's photo replaces it, match
+   roughly portrait 3:4 for the same framing.
+4. The e2e smoke test (`scripts/test-smoke-e2e.ts`) still creates its own
+   receptionist with `test-password-123` if the account is missing — see the
+   incident note above.
+
+---

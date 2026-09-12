@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { CLINIC } from "@/lib/brand";
 import { formatDateShort, formatDayHeading, formatTime12h } from "@/lib/utils";
 import {
   PageMasthead,
@@ -147,7 +148,11 @@ export default function ReceptionistHomePage() {
   if (!data) {
     return (
       <div className="flex flex-col gap-6">
-        <PageMasthead meta="Front desk" title="Today at the desk" />
+        <PageMasthead
+          meta="Front desk"
+          title="Today at the desk"
+          image={CLINIC.images.bpCheck}
+        />
         <Card>
           <CardContent className="flex flex-col gap-4 pt-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -168,6 +173,7 @@ export default function ReceptionistHomePage() {
       <PageMasthead
         meta={data.todayHeading}
         title="Today at the desk"
+        image={CLINIC.images.bpCheck}
         lead="Everything booked for today, in the order it arrives. Online requests stay unconfirmed until you act on them."
         actions={
           <>

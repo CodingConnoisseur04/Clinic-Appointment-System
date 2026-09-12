@@ -21,6 +21,17 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 
 ## Current focus
 
+**Design revamp 2 — "Warm Confidence", photographic: Closed — human reviewed
+2026-09-12 ("looks good"), commit ordered same day.** Not a phase and has no
+spec; see `changelog.md` → "Design revamp 2". A new imagery-led world on the
+human's explicit decisions (replace rather than deepen, Filipino clinic life
+photography, images everywhere they fit): photo hero on the landing page,
+photos in the board notices, a photograph slot in every role-appropriate
+masthead, an auth-panel texture layer. All imagery is free-license Pexels with
+provenance in `public/images/CREDITS.md`; the doctor portrait is a marked
+stand-in to be replaced before launch. Verified: tsc/lint/build clean,
+screenshot harness 26/26.
+
 **Design pass 2 — "Warm Confidence" deepened: Closed — human tested
 2026-09-11 ("all works well").** Not a phase and has no spec; see
 `changelog.md` → "Design pass 2". All 13 rendered routes rebuilt as one system

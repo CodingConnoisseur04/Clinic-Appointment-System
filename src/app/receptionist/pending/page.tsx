@@ -35,6 +35,7 @@ import {
   relativeDayLabel,
 } from "@/lib/utils";
 import { PageMasthead } from "@/components/console/page-masthead";
+import { CLINIC } from "@/lib/brand";
 import { EmptyState } from "@/components/console/empty-state";
 import { StatusMark } from "@/components/console/status-mark";
 import { Phone, Check, TriangleAlert } from "lucide-react";
@@ -74,6 +75,7 @@ export default function PendingPage() {
       <PageMasthead
         meta="Front desk"
         title="Requests to action"
+        image={CLINIC.images.reception}
         lead="Online requests wait here until you decide. Confirm one once payment is arranged: confirming sets it to Confirmed and texts the patient. Cancelling frees the slot."
       />
 

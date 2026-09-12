@@ -9,6 +9,7 @@ import { createAppointment } from "@/lib/booking/create-appointment";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { formatDateLong, formatTime12h, normalizePhMobile } from "@/lib/utils";
 import { PageMasthead } from "@/components/console/page-masthead";
+import { CLINIC } from "@/lib/brand";
 import { StepRail, type Step } from "@/components/console/step-rail";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,6 +150,7 @@ export default function BookPage() {
         <PageMasthead
           meta="Request received"
           title="We have your request"
+          image={CLINIC.images.heroFamily}
           lead="Nothing is confirmed yet. The front desk will contact you to arrange payment, then confirm the appointment and text you."
         />
         <Card className="relative max-w-xl overflow-hidden">
