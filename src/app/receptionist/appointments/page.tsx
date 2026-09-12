@@ -6,6 +6,8 @@ import {
   markAttendance,
   rejectAppointment,
 } from "@/lib/booking/update-appointment";
+import { rescheduleAppointment } from "@/lib/booking/reschedule-appointment";
+import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -50,12 +52,21 @@ export default function AppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "CONFIRMED" | "CANCELLED">("all");
   const [dateFilter, setDateFilter] = useState("");
   const [rejectTarget, setRejectTarget] = useState<AppointmentRow | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<AppointmentRow | null>(null);
+  const [reschedDate, setReschedDate] = useState<Date | undefined>(undefined);
+  const [reschedSlot, setReschedSlot] = useState<string | null>(null);
+  const [reschedBusy, setReschedBusy] = useState(false);
   const [attendanceTarget, setAttendanceTarget] = useState<{
     row: AppointmentRow;
     mark: "ATTENDED" | "NO_SHOW";
   } | null>(null);
 
   const today = todayIso();
+  // Minutes since local midnight, captured at render. Mirrors the reschedule
+  // lib's "already started" guard so the Move button never leads to a
+  // guaranteed refusal: future dates, plus today's slots not yet reached.
+  const nowMinutes =
+    new Date().getHours() * 60 + new Date().getMinutes();
 
   const filtered = appointments.filter((a) => {
     if (statusFilter !== "all" && a.status !== statusFilter) return false;
@@ -211,6 +222,10 @@ export default function AppointmentsPage() {
                 <ol>
                   {rows.map((row, i) => {
                     const pastOrToday = row.appointment_date <= today;
+                    const [mvH, mvM] = row.appointment_time.slice(0, 5).split(":").map(Number);
+                    const movableNotStarted =
+                      row.appointment_date > today ||
+                      (row.appointment_date === today && mvH * 60 + mvM > nowMinutes);
                     return (
                       <li
                         key={row.id}
@@ -280,16 +295,29 @@ export default function AppointmentsPage() {
                                   No-show
                                 </Button>
                               </>
-                            )}
-                          {row.status !== "CANCELLED" && !row.attendance && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-8"
-                              onClick={() => setRejectTarget(row)}
-                            >
-                              Cancel
-                            </Button>
+                            )}                          {row.status !== "CANCELLED" && !row.attendance && movableNotStarted && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8"
+                                onClick={() => {
+                                  setReschedDate(undefined);
+                                  setReschedSlot(null);
+                                  setRescheduleTarget(row);
+                                }}
+                              >
+                                Move
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-8"
+                                onClick={() => setRejectTarget(row)}
+                              >
+                                Cancel
+                              </Button>
+                            </>
                           )}
                         </div>
                       </li>
@@ -336,6 +364,93 @@ export default function AppointmentsPage() {
               }}
             >
               Cancel it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule dialog */}
+      <Dialog open={!!rescheduleTarget} onOpenChange={(o) => !o && setRescheduleTarget(null)}>
+        <DialogContent className="max-h-[85dvh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Move to another time</DialogTitle>
+            <DialogDescription>
+              {rescheduleTarget && (
+                <>
+                  {rescheduleTarget.patients?.full_name ?? "This patient"} ·{" "}
+                  {formatDateLong(rescheduleTarget.appointment_date)} at{" "}
+                  {formatTime12h(rescheduleTarget.appointment_time)}. The
+                  appointment keeps its record and payment details; only the
+                  time changes. Pick a new day and an open time.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <SlotPicker
+            date={reschedDate}
+            onDateChange={(d) => {
+              setReschedDate(d);
+              setReschedSlot(null);
+            }}
+            selected={reschedSlot}
+            onSelect={(t) => setReschedSlot(t)}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRescheduleTarget(null)}>
+              Keep current time
+            </Button>
+            <Button
+              disabled={!reschedDate || !reschedSlot || reschedBusy}
+              onClick={async () => {
+                const target = rescheduleTarget;
+                if (!target || !reschedDate || !reschedSlot) return;
+                setReschedBusy(true);
+                const result = await rescheduleAppointment(supabase, {
+                  appointmentId: target.id,
+                  newDate: toDateInput(reschedDate),
+                  newTime: reschedSlot,
+                });
+                setReschedBusy(false);
+                if (!result.success) {
+                  if (result.reason === "SLOT_TAKEN") {
+                    toast.error("That time was taken while you were choosing, please pick another.");
+                  } else {
+                    toast.error(result.message);
+                  }
+                  return;
+                }
+                const previous = `${formatDateLong(result.previousDate)} at ${formatTime12h(result.previousTime)}`;
+                const next = `${formatDateLong(toDateInput(reschedDate))} at ${formatTime12h(reschedSlot)}`;
+                setRescheduleTarget(null);
+                await refresh();
+                // A confirmed appointment that has been moved must be re-told
+                // its new time: the confirmation text it was sent no longer
+                // states it. Same receptionist-session path as the confirm
+                // flow; a transport error lands on the same failed banner.
+                if (target.status === "CONFIRMED") {
+                  try {
+                    const res = await fetch("/api/sms/send-confirmation", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ appointmentId: target.id }),
+                    });
+                    const sms = await res.json();
+                    toast[sms.delivered ? "success" : "info"](
+                      sms.delivered
+                        ? `Moved from ${previous} to ${next}. Confirmation text sent.`
+                        : `Moved from ${previous} to ${next}, but the text failed. Call the patient on ${target.patients?.phone ?? "their number"}.`
+                    );
+                  } catch {
+                    toast.info(
+                      `Moved from ${previous} to ${next}, but the text could not be sent. Call the patient on ${target.patients?.phone ?? "their number"}.`
+                    );
+                  }
+                } else {
+                  toast.success(`Moved from ${previous} to ${next}.`);
+                }
+              }}
+            >
+              {reschedBusy ? "Moving…" : "Move appointment"}
             </Button>
           </DialogFooter>
         </DialogContent>

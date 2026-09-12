@@ -76,6 +76,8 @@ export const TEST_PHONES = [
   "+639198888001",
   // test-phase8
   "+639199998001",
+  // test-reschedule
+  "+639191111001",
 ] as const;
 
 /**
