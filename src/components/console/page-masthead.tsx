@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 
@@ -6,12 +7,19 @@ import { cn } from "@/lib/utils";
  * The masthead is the app's identity carrier. Every page opens with one, and
  * it is never the same twice because it carries that page's real context —
  * the date, the counts, the primary action — instead of a bare page title.
+ *
+ * The optional photo slot is a material of the field, not an illustration
+ * bolted on: it occupies the right column on desktop and a bottom band on
+ * mobile, and merges into the deep field with a gradient so the photograph
+ * reads as part of the same wall. Pages that are dense data surfaces simply
+ * omit it.
  */
 export function PageMasthead({
   title,
   meta,
   lead,
   actions,
+  image,
   children,
   className,
 }: {
@@ -21,6 +29,8 @@ export function PageMasthead({
   /** One sentence of plain explanation. Not a subtitle for its own sake. */
   lead?: ReactNode;
   actions?: ReactNode;
+  /** Optional photograph. Alt text is required; decorative use goes elsewhere. */
+  image?: { src: string; alt: string };
   children?: ReactNode;
   className?: string;
 }) {
@@ -35,21 +45,42 @@ export function PageMasthead({
         aria-hidden
         className="rule-gold rule-draw absolute inset-x-0 top-0 h-px"
       />
-      <div className="flex flex-col gap-5 px-5 pt-6 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:pt-7 sm:pb-6">
-        <div className="min-w-0">
-          {meta ? (
-            <p className="text-meta text-field-muted uppercase">{meta}</p>
-          ) : null}
-          <h1 className="font-heading text-title mt-2 text-balance">{title}</h1>
-          {lead ? (
-            <p className="text-lead mt-2.5 max-w-prose text-pretty text-field-muted">
-              {lead}
-            </p>
-          ) : null}
+      <div className="flex flex-col sm:flex-row sm:items-stretch">
+        <div className="min-w-0 flex-1 px-5 pt-6 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              {meta ? (
+                <p className="text-meta text-field-muted uppercase">{meta}</p>
+              ) : null}
+              <h1 className="font-heading text-title mt-2 text-balance">
+                {title}
+              </h1>
+              {lead ? (
+                <p className="text-lead mt-2.5 max-w-prose text-pretty text-field-muted">
+                  {lead}
+                </p>
+              ) : null}
+            </div>
+            {actions ? (
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {actions}
+              </div>
+            ) : null}
+          </div>
         </div>
-        {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {actions}
+        {image ? (
+          <div className="relative h-44 w-full shrink-0 overflow-hidden sm:h-auto sm:w-56 lg:w-72">
+            <Image
+              src={image.src}
+              alt={image.alt}
+              fill
+              sizes="(min-width: 1024px) 288px, (min-width: 640px) 224px, 100vw"
+              className="object-cover"
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-r from-[var(--field)] via-[color-mix(in_oklab,var(--field)_38%,transparent)] to-transparent"
+            />
           </div>
         ) : null}
       </div>

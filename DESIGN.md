@@ -1,6 +1,6 @@
 ---
 name: Golden Friendship Family Clinic
-description: Warm, confident clinic interface — deep forest fields, warm cream ground, gold that carries meaning
+description: Warm, confident clinic interface — deep forest fields, warm cream ground, gold that carries meaning, real photography of Filipino clinic life
 colors:
   primary: "#1a5c3a"
   primary-foreground: "#faf8f2"
@@ -125,7 +125,9 @@ components:
 
 ## Overview
 
-**Creative North Star: "Warm Confidence", deepened — the clinic's front wall and its desk book.**
+**Creative North Star: "Warm Confidence", photographic — the clinic's front wall with its windows open, and its desk book.**
+
+The third pass let the light in. Photography — Filipino clinic life in warm daylight, sourced free-license from Pexels (provenance in `public/images/CREDITS.md`) — is a first-class material of the interface, not clip art: the hero looks through a window into the consult room, page mastheads carry a photograph merged into the deep field, and the person who arrives sees the clinic's people before its name. The rules below still govern everything the photos touch.
 
 The clinic has two real objects and the interface is built from both. Outward is the **front wall**: a deep forest field carrying the name, the hours, and the honest three-step flow, with a community board of pinned notices below it. Inward is the **desk book**: the ruled appointment ledger the front desk actually worked from before this app existed — a time running down the left gutter, records entered in reading order, states written down as inked marks rather than colored pills.
 
@@ -138,6 +140,7 @@ It still refuses the generic SaaS look, and it now also refuses its own earlier 
 
 **Key Characteristics**
 - Two zones: a deep forest field for context and identity, a warm cream ground for records and forms
+- Real photography as a material of the field: merged with gradients, never pasted on; always of people or places, never abstract "medical stock"
 - Gold carries information, never decoration (see *The Gold Has a Job Rule*)
 - Six type registers, including a mono data register for every figure the clinic reads off a screen
 - Ruled lines, a time gutter, and inked state marks — the desk book's vocabulary
@@ -178,6 +181,16 @@ The clinic's signature, and the color that carries meaning. For text-sized gold 
 
 **The Warm Ground Rule.** Page backgrounds are never pure white. White is reserved for paper that lifts off the cream.
 
+## Imagery
+
+**The Photo Serves the Story Rule.** Every photograph shows clinic life — a consult, a blood-pressure check, the waiting room, the reception counter, the doctor — never abstract stethoscope glamour shots used as decoration. The one texture exception (stethoscope on wood) lives only inside the auth field panel at 13% opacity, felt more than seen.
+
+**The Merge, Don't Paste Rule.** A photo that touches the deep field is blended into it with a gradient from `--field`, so the wall reads as one material. On cream, photos sit as rounded paper objects (`rounded-lg`, warm border). No raw photo rectangles floating on the field.
+
+**The Honest Faces Rule.** These are licensed stock photos of models, not the real clinic's people. Wherever the doctor portrait appears, it carries the visible note "Photograph for illustration". Replace with a real photo of the actual physician before any public launch. Every image's provenance lives in `public/images/CREDITS.md` (Pexels License: free for commercial use, no attribution required).
+
+**The Alt Text Rule.** Every shipping image has meaningful alt text describing the scene (except the decorative texture and the closing-band photo, which are `aria-hidden`/empty-alt). If a photo could not be described to a blind caller over the phone, it does not ship.
+
 ## Typography
 
 **Display:** DM Serif Display 400 · **Body:** Geist · **Data:** Geist Mono
@@ -215,7 +228,7 @@ Body copy uses `text-xs` (0.75rem), `text-sm` (0.875rem), `text-base`, `text-xl`
 
 ## Layout
 
-**Public:** full-bleed bands. The hero is a deep field that fills the first viewport on desktop (`lg:min-h-[74svh]`); the board section follows on cream; a closing field band anchors the page.
+**Public:** full-bleed bands. The hero is a deep field that fills the first viewport on desktop (`lg:min-h-[74svh]`), two-column at `lg`: display-scale name and the honest flow on the left, the hero photograph framed as a window (`rounded-2xl`, warm border, field gradient at its foot) on the right; the board of pinned notices follows on cream, each notice now carrying its own photograph; a closing field band anchors the page, standing inside a photograph of the consult room merged into the field.
 
 **Auth:** a two-zone split above `lg` — field panel with identity beside a calm cream form column (`max-w-md`). Below `lg` the panel collapses to a compact header strip so the form is the first thing on screen.
 
@@ -244,7 +257,7 @@ Consistently rounded, never bubbly. Cards and elevated containers `rounded-xl` (
 ## Components
 
 ### PageMasthead
-Every page's identity carrier, and never the same twice because it carries that page's real context rather than a bare title. Deep field, `rounded-2xl`, a gold hairline drawing itself across the top (`rule-draw`), an optional tracked `meta` line above a serif `title`, an optional `lead` sentence, an optional `actions` slot on the right, and an optional `MastheadStats` strip along the foot dividing the field into 2 (mobile) or 4 (desktop) figures — mono, with `tone: "gold"` reserved for the count that needs acting on.
+Every page's identity carrier, and never the same twice because it carries that page's real context rather than a bare title. Deep field, `rounded-2xl`, a gold hairline drawing itself across the top (`rule-draw`), an optional tracked `meta` line above a serif `title`, an optional `lead` sentence, an optional `actions` slot on the right, an optional `image` slot (the photograph occupying the right column on desktop and a bottom band on mobile, merged into the field by a left gradient — dense data surfaces omit it), and an optional `MastheadStats` strip along the foot dividing the field into 2 (mobile) or 4 (desktop) figures — mono, with `tone: "gold"` reserved for the count that needs acting on.
 
 ### Ledger
 The desk book. `<Ledger>` is an `<ol>` with a top rule; `<LedgerRow index>` is a ruled grid row with an authored ink-in stagger; `<LedgerTime>` is the mono time in the left gutter; `<LedgerHeading trailing>` is a tracked day heading with a 2px rule. Used by the desk run-sheet, all appointments, the doctor's agenda, and the patient's own history.
@@ -277,6 +290,7 @@ Skeletons shaped like the content they replace: mono-width lines in a ledger, ti
 
 ### Do
 - **Do** open every authenticated page with `PageMasthead` carrying that page's real context — the date, the counts, the primary action.
+- **Do** give every photograph an honest alt text, keep provenance in `public/images/CREDITS.md`, and mark the doctor portrait as an illustration.
 - **Do** set every time, date, count, percentage, phone and payment reference in `.figure` (mono, tabular).
 - **Do** use `Ledger`/`LedgerRow`/`LedgerHeading` for any list of records.
 - **Do** use `StatusMark` for appointment states rather than inventing a badge.
@@ -295,4 +309,5 @@ Skeletons shaped like the content they replace: mono-width lines in a ledger, ti
 - **Don't** use gray shadows, `transition-all`, gradient text, glass, or decorative blur.
 - **Don't** render a placeholder value as if it were real. The public phone number shows the sample number only while clearly marked as illustrative (never as a `tel:` link); the real, linked number appears the moment the clinic sets one.
 - **Don't** add kicker lines, eyebrow labels, or section numbers above headings.
+- **Don't** paste a photo onto the deep field without a merge gradient, or use photography as filler where the page's own data is the content.
 - **Don't** repeat a page title in both the masthead and the first card.

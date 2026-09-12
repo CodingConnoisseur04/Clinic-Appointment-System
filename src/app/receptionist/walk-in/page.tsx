@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { useAppointments } from "@/hooks/use-appointments";
 import { PageMasthead } from "@/components/console/page-masthead";
+import { CLINIC } from "@/lib/brand";
 import { StepRail, type Step } from "@/components/console/step-rail";
 import { formatDateLong, formatTime12h, normalizePhMobile } from "@/lib/utils";
 import { BadgeCheck, Search } from "lucide-react";
@@ -213,6 +214,7 @@ export default function WalkInPage() {
       <PageMasthead
         meta="Front desk"
         title="Register a walk-in"
+        image={CLINIC.images.reception}
         lead="Take the booking and the payment in one pass. Walk-ins are confirmed immediately, so the slot is held the moment you finish."
       />
 
