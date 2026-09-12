@@ -23,7 +23,7 @@ import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { useAppointments } from "@/hooks/use-appointments";
 import { PageMasthead } from "@/components/console/page-masthead";
 import { StepRail, type Step } from "@/components/console/step-rail";
-import { formatDateLong, formatTime12h } from "@/lib/utils";
+import { formatDateLong, formatTime12h, normalizePhMobile } from "@/lib/utils";
 import { BadgeCheck, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,12 +68,19 @@ export default function WalkInPage() {
   }
 
   async function lookupPhone() {
-    const phone = wiPhone.trim();
-    if (!phone) return;
+    // Canonicalize before lookup: the stored record is canonical (find-or-create
+    // normalizes), so the query has to be too, or "0917 123 4567" would miss
+    // the row stored as "09171234567".
+    const canonical = normalizePhMobile(wiPhone.trim());
+    if (!canonical) {
+      toast.error("Enter a valid PH mobile number, e.g. 0917 123 4567");
+      return;
+    }
+    setWiPhone(canonical);
     const { data } = await supabase
       .from("patients")
       .select("id, full_name, email, date_of_birth, address, profile_id")
-      .eq("phone", phone)
+      .eq("phone", canonical)
       .limit(1)
       .maybeSingle();
     if (data) {
@@ -99,8 +106,19 @@ export default function WalkInPage() {
   }
 
   async function submitWalkin() {
-    if (!wiDate || !wiSlot || !wiFullName.trim()) {
-      toast.error("Name, date, and time slot are required.");
+    // Phone is required at the form level because it is the patient identity
+    // key (exact-match reconciliation). The lib would reject an empty one,
+    // but only after the whole form is filled, with a raw validation message.
+    if (!wiPhone.trim() || !wiDate || !wiSlot || !wiFullName.trim()) {
+      toast.error("Mobile number, name, date, and time slot are required.");
+      return;
+    }
+    if (!myProfileId) {
+      toast.error("Your session has not loaded yet. Try again in a moment.");
+      return;
+    }
+    if (wiEmail.trim() && !/^\S+@\S+\.\S+$/.test(wiEmail.trim())) {
+      toast.error("That email address does not look right.");
       return;
     }
     setWiSubmitting(true);
@@ -136,6 +154,30 @@ export default function WalkInPage() {
       const result = await createAppointment(supabase, input);
       if (result.success) {
         toast.success("Walk-in booked and confirmed.");
+        // GCash walk-ins get the confirmation text: payment happened remotely,
+        // so the patient leaves without a paper receipt. Cash walk-ins are
+        // standing at the desk and get a receipt in hand, so no SMS.
+        if (wiMethod === "gcash") {
+          try {
+            const res = await fetch("/api/sms/send-confirmation", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ appointmentId: result.appointmentId }),
+            });
+            const sms = await res.json();
+            if (res.ok && sms.delivered) {
+              toast.success(`Confirmation text sent to ${wiPhone.trim()}.`);
+            } else {
+              toast.info(
+                "Booked, but the confirmation text failed. The failure is logged; call the patient instead."
+              );
+            }
+          } catch {
+            toast.info(
+              "Booked, but the confirmation text could not be sent. Call the patient instead."
+            );
+          }
+        }
         resetForm();
         await refresh();
       } else {
@@ -370,7 +412,13 @@ export default function WalkInPage() {
 
             <Button
               onClick={submitWalkin}
-              disabled={wiSubmitting || !wiDate || !wiSlot || !wiFullName.trim()}
+              disabled={
+                wiSubmitting ||
+                !wiPhone.trim() ||
+                !wiDate ||
+                !wiSlot ||
+                !wiFullName.trim()
+              }
               className="h-10 w-full"
             >
               {wiSubmitting ? "Booking…" : "Book & confirm now"}

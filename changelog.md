@@ -1291,10 +1291,27 @@ the restructure did not break any route or role boundary.
    `review.patient@clinic.local` (used for the patient-role screenshots) and a
    `patients` row is *not* created until a booking is submitted, so only the
    auth profile exists.
-4. **`walk-in` does not require a phone number at submit time.** `submitWalkin`
-   guards name, date and time but not phone, while `find-or-create` receives
-   `phone: ""`. This is a pre-existing validation gap I deliberately did not
-   change (it is behaviour, not design), but it is worth a look.
+4. **`walk-in` did not require a phone number at submit time — FIXED
+   2026-09-11.** `submitWalkin` guarded name, date and time but not phone,
+   while `find-or-create` receives `phone: ""`. The lib's zod schema rejected
+   it (phone is required), so no corrupt patient row could be created, but
+   the receptionist only found out after filling the whole three-step form,
+   via a raw validation toast. Fixed in the walk-in form only, deliberately:
+   the guard now requires mobile number alongside name, date and time, the
+   submit button is disabled until it is present, and the optional email
+   field gets a shape check (the lib would reject a malformed one the same
+   late, raw way). `find-or-create` itself is untouched: phone stays the
+   required identity key there. Phone keeps its `type="tel" inputMode="tel"`
+   attributes (Web Interface Guidelines pass). Verified: `tsc --noEmit`
+   clean, eslint clean on the file.
+
+### Walk-in phone validation fix (2026-09-11, follow-up)
+
+- `src/app/receptionist/walk-in/page.tsx`: submit guard + disabled state now
+  include `wiPhone.trim()`; malformed optional email caught at form level.
+  Rationale: phone is the patient identity key (exact-match reconciliation,
+  Addendum A.1), so the desk must not be able to complete a walk-in without
+  it. No schema, RLS, or lib changes.
 
 ### Commit record
 
@@ -1354,3 +1371,190 @@ None — ad-hoc work outside any phase spec.
 ### Verification
 `tsc --noEmit` clean; `npm run lint` clean; screenshot harness **26/26**
 (13 routes × desktop + mobile).
+
+---
+
+## Booking/SMS/payment flow critique + hardening
+**Date:** 2026-09-11
+**Branch:** main (uncommitted at time of writing)
+**Spec:** none — ad-hoc review-and-harden pass requested by the human ("criticise and fix the booking flow, how SMS is sent, so a booking is created and pay").
+
+### What was found (critique, ordered by severity)
+1. **Walk-in patients never got a confirmation SMS.** Walk-ins are confirmed
+   instantly in one pass, but no text was ever sent — the only SMS path was the
+   online-request confirm dialog.
+2. **No phone normalization anywhere.** `patients.phone` is reconciled by exact
+   string match and sent to Semaphore verbatim, so `09171234567`,
+   `0917 123 4567` and `+639171234567` were three different patient records
+   (breaking the one-person-one-record guarantee) and spaced numbers could
+   fail at the provider.
+3. **`/api/sms/send-confirmation` checked authentication but not role.** A
+   patient session could trigger real (paid) Semaphore sends for their own
+   appointments; the request only failed afterwards at the `sms_logs` insert,
+   i.e. the SMS went out first and the audit row second.
+4. **`SendConfirmationResult.logged` was hardcoded `true`** even when the
+   `sms_logs` insert failed — the return value lied about durability.
+5. **Reminder cron had no dedup** — triggering it twice in the ±12h window
+   double-texted (and double-charged) every confirmed appointment.
+6. Minor, noted only: `createAppointment`'s CLOSED_DATE pre-check is
+   TOCTOU-racy (the `uq_appointments_slot` index is the real backstop, so
+   acceptable); a patient entering another person's unlinked phone number can
+   claim that walk-in record; no guard against confirming a request whose date
+   has already passed.
+
+### What was fixed (human decided each approach via clarifying questions)
+- **Phone canonicalization** — new `normalizePhMobile()` in `src/lib/utils.ts`
+  (canonical local `09XXXXXXXXX`; accepts `+63`/`63`/missing leading 0, any
+  spacing; returns null for non-PH-mobile input). Applied at every entry point:
+  `findOrCreatePatient` (normalize-then-lookup-then-insert, with a clear
+  validation error), the walk-in phone lookup (canonical query + canonical
+  input), the patient book form (client-side convenience check + placeholder),
+  and `sendSms` itself as the last line of defence (invalid number on record =
+  typed `failed` log row, no network I/O). Note: existing rows keep their old
+  format until that patient books again; there is no DB backfill.
+- **Walk-in GCash SMS** — after a successful walk-in booking, GCash payments
+  now trigger `/api/sms/send-confirmation` (same receptionist-session path as
+  the online flow, with success/failed/transport-error handling). Cash walk-ins
+  deliberately do not text: the patient is standing at the desk with a physical
+  receipt. Payment reference stays optional everywhere, per decision.
+- **Role check on the SMS route** — `POST /api/sms/send-confirmation` now
+  verifies the caller's profile role is `receptionist` before touching
+  Semaphore. The pre-existing message is unchanged: the paid call now cannot
+  happen for non-staff sessions at all.
+- **Honest `logged` flag** — `SendConfirmationResult.logged` is now the real
+  insert outcome (`!logErr`). The only consumer (phase 7 harness) treats it as
+  a truthy success check, so the type widening is compatible.
+- **Cron dedup** — the reminder route joins `sms_logs(type, status)` on each
+  candidate appointment and skips any that already have a `sent` reminder.
+  Failed reminders are still retried.
+- **Pending page transport guard** — the confirm dialog's SMS fetch is wrapped
+  in try/catch; a network blip now shows the failed-SMS banner instead of an
+  unhandled rejection after a successful confirm.
+
+### Files touched
+- `src/lib/utils.ts` (new `normalizePhMobile()`)
+- `src/lib/patients/find-or-create-patient.ts`
+- `src/lib/sms/send-sms.ts`, `src/lib/sms/send-confirmation.ts`
+- `src/app/api/sms/send-confirmation/route.ts`
+- `src/app/api/cron/send-reminders/route.ts`
+- `src/app/receptionist/walk-in/page.tsx`,
+  `src/app/receptionist/pending/page.tsx`, `src/app/patient/book/page.tsx`
+
+### Deviations from spec
+None against any phase spec — this pass tightened seams the specs left open:
+Phase 7's spec said the SMS route must bind to the caller's session so RLS
+applies; it never said the route must also verify the caller's *role* (RLS on
+`sms_logs` was the only gate, which fires after the provider call). Phase 5/4
+specs never specified phone format handling. The GCash-only walk-in SMS is a
+product decision the human made explicitly during this pass (spec is silent on
+walk-in SMS entirely).
+
+### Verification
+- `tsc --noEmit` clean; `npm run lint` clean.
+- Harnesses on the drifted local DB (no `db reset` — human's manual test data
+  is preserved): phase 7 **8/8** (SMS send/log/deny paths), phase 4 **5/5**
+  (confirm/reject/attendance/payment), phase 5 **5/5** (booking + reconciliation).
+- Screenshot harness **26/26** (13 routes × desktop + mobile) with a dev server
+  running the changed pages.
+- **Two pre-existing failures, both stale-state, NOT regressions, both traced
+  to local DB drift (doctor availability edited via UI: Mon 05:00, Wed 06:00
+  rows) plus the human's own manual-test appointment/SMS rows:**
+  - phase 3 Test 3 (expects seeded 09:00-17:00 baseline, got 24 slots from
+    05:00) — passes on a fresh `db reset`.
+  - phase 8 Tests 1-2 (no-show/SMS report exact counts; the drifted DB holds
+    past confirmed rows with NO_SHOW marks and real sms_logs rows in the
+    report's ±31d range that the suite's seeding didn't create).
+  - phase 2 Test 11 is stale by *design*, not drift: it asserts receptionist
+    `sms_logs` inserts are DENIED, which Phase 7 deliberately reversed
+    (`sms_logs_insert_receptionist`); its failure output
+    (`recInsBlocked=false, docInsBlocked=true`) is Phase 7's intended state.
+  A `supabase db reset` + `seed-staff` + rerun would clear 3 and 8; not run
+
+---
+
+## Environment recovery + end-to-end smoke test
+**Date:** 2026-09-11
+**Spec:** none — (a) environment incident after moving the project from C: to
+D: ("supabase start" failing), (b) full-flow verification requested by the
+human against the rebuilt database.
+
+### Environment incident (context for the data state)
+- The project folder move did NOT move Supabase's data: local Supabase lives
+  entirely in Docker's WSL2 disk, which stayed on C:
+  (`C:\Users\PC\AppData\Local\Docker\wsl\docker_data.vhdx`, 12 GB).
+- C: being 96% full had hung Docker Desktop mid-startup (engine pipe returned
+  HTTP 500; backend log showed "still waiting for the engine to respond after
+  9m45s"). That hang is why `supabase start` failed after the move.
+- Docker's data disk was relocated to `D:\Docker\wsl` and Docker Desktop's
+  settings updated (`CustomWslDistroDir` = `D:\Docker\wsl` in
+  settings-store.json — note: `DataFolder` alone is NOT the key that moves the
+  WSL disk; the backend's own flat-settings dump revealed
+  `customWslDistroDir`). WSL distro re-registered against the new path.
+  C: freed from 9.6 GB to ~20 GB free; Docker now grows on D: (129 GB free).
+- **Data loss, honestly stated:** the earlier disk-full hang corrupted part of
+  Docker's metadata. The `supabase_db_*` container and the Postgres volume
+  record did not survive it, so the database was rebuilt from migrations +
+  seed.sql (schema, RLS, trigger, seeded hours and clinic_settings all intact;
+  auth users and any app-entered test data are gone — staff must be re-seeded
+  with `npx tsx scripts/seed-staff.ts`, done for receptionist during this run).
+- `.env.local` legacy JWT keys still authenticate against the rebuilt stack
+  (verified HTTP 200 via REST) — no env changes needed.
+
+### What was built
+- `scripts/test-smoke-e2e.ts` (new) — Playwright end-to-end smoke test driving
+  the REAL UI in Chromium: patient signup through `/signup` (real
+  `handle_new_user` trigger), booking through `/patient/book` with the on-page
+  slot picker (`/api/available-slots` against seeded availability), DB
+  assertions via service-role (assertions only), receptionist login through
+  `/login`, confirm-with-payment through the pending page dialog, and the
+  SMS route under `SEMAPHORE_DRY_RUN=true`. Hydration-race-safe (retries with
+  `networkidle` + settle waits — first versions of this script failed purely
+  on dev-compile/hydration timing, not app bugs). Rerunnable: sweeps its own
+  `@test.local` rows first.
+- `next.config.ts` — added `allowedDevOrigins: ["127.0.0.1"]`. **This is a real
+  app fix surfaced by the browser testing:** Next 16 blocks dev resources for
+  non-allowlisted hosts, and this project's canonical local URL is
+  `http://127.0.0.1:3000` (matches `supabase/config.toml` `site_url`). Symptom
+  was every `/_next/static/chunks/*._.js` request returning 403 in the browser
+  (curl saw 200), so no page ever hydrated — sign-up, login and booking were
+  all dead at that host, for humans too, not just the test.
+
+### Smoke test results (all PASS)
+| Check | Result |
+|---|---|
+| Receptionist staff account ready (recreated post-rebuild) | PASS |
+| Patient signup through /signup lands on /patient | PASS |
+| Booking form prefilled from profile | PASS |
+| Slot picker shows open times (16 slots, seeded weekday) | PASS |
+| Booking receipt shown (request submitted) | PASS |
+| patients row created, phone canonicalized (+63… → 09…), profile linked | PASS |
+| Appointment PENDING / source=online | PASS |
+| Receptionist login lands on /receptionist | PASS |
+| Pending request visible on /receptionist/pending | PASS |
+| Confirm + payment log → SMS banner shown | PASS |
+| Appointment CONFIRMED, method=cash, ref saved | PASS |
+| sms_logs: exactly one confirmation row, status=sent (dry-run) | PASS |
+| No uncaught page errors on either side | PASS |
+
+### Findings / follow-ups
+- **a11y gap (small):** the confirm dialog's "Payment method" `<Label>` has no
+  `htmlFor` association with the select trigger, so it isn't announced as the
+  combobox's label (the smoke test had to address the trigger by role). Worth
+  fixing next time that dialog is touched.
+- The script is committed as a reusable sanity harness:
+  `npx tsx scripts/test-smoke-e2e.ts` with `npm run dev` running. It needs the
+  receptionist account to exist (creates it if missing, same convention as
+  `seed-staff.ts`).
+- Dev server left running on port 3000 (PID may differ by the time you read
+  this); stop it before `db reset`-style work if it interferes.
+  here to avoid wiping human test data (decision left to the human).
+
+### Follow-up: `<html>` hydration warning guard (2026-09-12)
+- Human reported a React hydration mismatch: a `data-mbtss-nonce` attribute
+  appearing on `<html>` client-side. The attribute does not exist anywhere in
+  the repo; it is injected by a browser extension before React hydrates (the
+  documented "extension messes with the HTML" case). No app code is at fault.
+- Added `suppressHydrationWarning` to the `<html>` element in
+  `src/app/layout.tsx` — the standard mitigation for extension-injected root
+  attributes. Scoped to `<html>` only, so genuine hydration mismatches
+  elsewhere still surface. No behavior change.

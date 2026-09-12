@@ -48,7 +48,9 @@ export async function GET(request: Request) {
 
   const { data: appts, error } = await supabase
     .from("appointments")
-    .select("id, appointment_date, appointment_time, patients(phone)")
+    .select(
+      "id, appointment_date, appointment_time, patients(phone), sms_logs(type, status)"
+    )
     .eq("status", "CONFIRMED")
     .gte("appointment_date", fmt(fromDate))
     .lte("appointment_date", fmt(toDate));
@@ -63,6 +65,16 @@ export async function GET(request: Request) {
   for (const appt of appts ?? []) {
     const t = appointmentMs(appt.appointment_date, appt.appointment_time);
     if (t < window.startMs || t > window.endMs) continue;
+
+    // Dedup: skip appointments that already have a sent reminder. Without
+    // this, running the cron twice in the window texts (and charges for)
+    // every confirmed appointment twice. Failed reminders are retried.
+    const reminders =
+      (appt.sms_logs as unknown as { type: string; status: string }[] | null) ??
+      [];
+    if (reminders.some((l) => l.type === "reminder" && l.status === "sent")) {
+      continue;
+    }
 
     const phone = (appt.patients as unknown as { phone: string } | null)?.phone;
     if (!phone) {

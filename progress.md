@@ -58,6 +58,14 @@ changelog deviations 1, 7 and 8.
 Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named
 `phase-10-deployment.md`.
 
+**Environment note 2026-09-11:** Docker/Supabase data disk moved C: → D:
+(`D:\Docker\wsl`) after a disk-full hang; the local DB was rebuilt from
+migrations + seed (auth users wiped — staff re-seeded via `seed-staff.ts`;
+manual test data gone). End-to-end smoke test (patient signup → booking →
+receptionist confirm → SMS log) passes 13/13 against the rebuilt stack — see
+`changelog.md` → "Environment recovery + end-to-end smoke test". Reusable via
+`npx tsx scripts/test-smoke-e2e.ts` with the dev server running.
+
 ## Renumbering note (this update)
 Auth + role-based access was missing from the original phase list entirely;
 "Slot-conflict logic" was incorrectly slotted in as Phase 2 with a spec

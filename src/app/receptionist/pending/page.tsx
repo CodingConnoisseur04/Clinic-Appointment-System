@@ -273,13 +273,23 @@ export default function PendingPage() {
                 );
                 setConfirmRef("");
                 if (confirmed) {
-                  const res = await fetch("/api/sms/send-confirmation", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ appointmentId: target.id }),
-                  });
-                  const sms = await res.json();
-                  setSmsOutcome({ delivered: Boolean(res.ok && sms.delivered), name });
+                  // The confirm itself already succeeded; a transport error
+                  // here must not surface as an unhandled rejection. The
+                  // banner below covers both delivered and failed outcomes.
+                  try {
+                    const res = await fetch("/api/sms/send-confirmation", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ appointmentId: target.id }),
+                    });
+                    const sms = await res.json();
+                    setSmsOutcome({
+                      delivered: Boolean(res.ok && sms.delivered),
+                      name,
+                    });
+                  } catch {
+                    setSmsOutcome({ delivered: false, name });
+                  }
                 }
               }}
             >

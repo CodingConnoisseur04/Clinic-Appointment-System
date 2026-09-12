@@ -1,3 +1,5 @@
+import { normalizePhMobile } from "@/lib/utils";
+
 export type SendSmsResult =
   | { success: true; messageId: string }
   | { success: false; error: string };
@@ -31,10 +33,21 @@ export async function sendSms(
     return { success: false, error: "SEMAPHORE_API_KEY is not set" };
   }
 
+  // Last line of defence before the provider: canonicalize and refuse numbers
+  // that cannot be a PH mobile. Storage should already hold canonical numbers
+  // (find-or-create normalizes), but legacy rows or future writers may not.
+  const number = normalizePhMobile(input.number);
+  if (!number) {
+    return {
+      success: false,
+      error: `invalid mobile number on record for this patient`,
+    };
+  }
+
   try {
     const body = new URLSearchParams({
       apikey: apiKey,
-      number: input.number,
+      number,
       message: input.message,
       ...(senderName ? { sendername: senderName } : {}),
     });

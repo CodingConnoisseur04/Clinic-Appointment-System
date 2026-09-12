@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { createAppointment } from "@/lib/booking/create-appointment";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
-import { formatDateLong, formatTime12h } from "@/lib/utils";
+import { formatDateLong, formatTime12h, normalizePhMobile } from "@/lib/utils";
 import { PageMasthead } from "@/components/console/page-masthead";
 import { StepRail, type Step } from "@/components/console/step-rail";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -68,6 +68,13 @@ export default function BookPage() {
       toast.error("Name, phone, date, and time slot are required.");
       return;
     }
+    // Canonicalize client-side so the patient record starts canonical; the API
+    // normalizes again server-side (client checks are convenience, not trust).
+    const canonicalPhone = normalizePhMobile(phone);
+    if (!canonicalPhone) {
+      toast.error("Please enter a valid PH mobile number, e.g. 0917 123 4567");
+      return;
+    }
 
     const { data } = await supabase.auth.getUser();
     if (!data.user || data.user.id !== profile.id) {
@@ -82,7 +89,7 @@ export default function BookPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: phone.trim(),
+          phone: canonicalPhone,
           fullName: fullName.trim(),
           profileId: profile.id,
         }),
@@ -253,6 +260,7 @@ export default function BookPage() {
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    placeholder="0917 123 4567"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                   />

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizePhMobile } from "@/lib/utils";
 
 export type FindOrCreatePatientInput = {
   phone: string;
@@ -36,10 +37,18 @@ export async function findOrCreatePatient(
     };
   }
 
+  // Canonicalize before BOTH the lookup and the insert: exact-match
+  // reconciliation only works if every entry of the same number produces the
+  // same stored string ("0917 123 4567" and "+639171234567" are one patient).
+  const phone = normalizePhMobile(input.phone);
+  if (!phone) {
+    return { error: "Please enter a valid PH mobile number, e.g. 0917 123 4567" };
+  }
+
   const { data: existing } = await supabase
     .from("patients")
     .select("id, profile_id")
-    .eq("phone", input.phone)
+    .eq("phone", phone)
     .limit(1)
     .maybeSingle();
 
@@ -85,7 +94,7 @@ export async function findOrCreatePatient(
   const insert = await supabase
     .from("patients")
     .insert({
-      phone: input.phone,
+      phone,
       full_name: input.fullName,
       profile_id: input.profileId ?? null,
       email: input.email ?? null,

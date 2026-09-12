@@ -6,6 +6,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/**
+ * Canonical PH mobile format: 09XXXXXXXXX (11 digits, digits only).
+ * Accepts +63 / 63 / a missing leading 0, plus any spacing or dashes:
+ * "+63 917 123 4567", "0917-123-4567" and "9171234567" all become
+ * "09171234567". Returns null for anything that is not a PH mobile number —
+ * landlines, foreign numbers, too few or too many digits.
+ *
+ * Used everywhere a phone number enters the system (patient identity and SMS
+ * sending) so one person keeps exactly one patient record and Semaphore
+ * receives a clean number.
+ */
+export function normalizePhMobile(raw: string): string | null {
+  const digits = raw.replace(/\D/g, "");
+  let local = digits;
+  if (local.startsWith("639")) local = `0${local.slice(2)}`;
+  else if (local.length === 10 && local.startsWith("9")) local = `0${local}`;
+  return /^09\d{9}$/.test(local) ? local : null;
+}
+
 /** Convert a 24h time string like "14:30" to "2:30 PM". */
 export function formatTime12h(time24: string): string {
   const [h, m] = time24.split(":").map(Number);

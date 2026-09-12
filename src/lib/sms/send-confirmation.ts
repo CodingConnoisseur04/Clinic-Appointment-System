@@ -4,7 +4,11 @@ import { CLINIC } from "@/lib/brand";
 import { formatTime12h } from "@/lib/utils";
 
 export type SendConfirmationResult = {
-  logged: true;
+  // True only when the sms_logs row was actually written — a false here means
+  // the outcome exists nowhere durable, so callers should treat the send as
+  // unrecorded (the UI surfaces this; Phase 7's FR5a spirit is honesty, not
+  // optimistic reporting).
+  logged: boolean;
   delivered: boolean;
 };
 
@@ -80,5 +84,5 @@ export async function sendConfirmationSms(
     console.error(`[sms] failed to write sms_logs row: ${logErr.message}`);
   }
 
-  return { logged: true, delivered };
+  return { logged: !logErr, delivered };
 }
