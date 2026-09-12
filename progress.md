@@ -21,6 +21,15 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 
 ## Current focus
 
+**Receptionist in-place reschedule: Built — awaiting test (branch
+`feat/reschedule`, uncommitted).** Not a phase and has no spec; see
+`changelog.md` → "Receptionist in-place reschedule". Closes the gap the human
+found testing: the desk could confirm/cancel/mark attendance but could not
+change an appointment's time. New lib function (typed outcomes, DB-level slot
+backstop, past/cancelled guards) + "Move" dialog with the shared slot picker
+on All appointments + automatic re-confirmation text for moved CONFIRMED
+appointments. Harness 9/9; tsc/lint/build clean; screenshots 26/26.
+
 **Design revamp 2 — "Warm Confidence", photographic: Closed — human reviewed
 2026-09-12 ("looks good"), commit ordered same day.** Not a phase and has no
 spec; see `changelog.md` → "Design revamp 2". A new imagery-led world on the

@@ -1564,7 +1564,7 @@ human against the rebuilt database.
 ## Design revamp 2 — "Warm Confidence", photographic (all pages + imagery)
 **Date:** 2026-09-12
 **Branch:** design-revamp-2 (committed and merged to main same day, on the
-human's review "looks good")
+human's review "looks good"; branch deleted after merge)
 **Spec:** none — ad-hoc design work requested by the human: "a revamp on the
  design of all pages using skill impeccable, with images in the home page —
  what new hypothetical users would see to avail the service". Three decisions
@@ -1698,5 +1698,128 @@ convention and now diverges — harmless, but worth unifying eventually).
 4. The e2e smoke test (`scripts/test-smoke-e2e.ts`) still creates its own
    receptionist with `test-password-123` if the account is missing — see the
    incident note above.
+
+---
+
+## Receptionist in-place reschedule
+**Date:** 2026-09-12
+**Branch:** feat/reschedule (uncommitted at time of writing)
+**Spec:** none — closes a gap the human found while testing: "receptionist
+ can't change the schedule." Patient self-service reschedule/cancel remains
+ banned per the Master Handoff; this is the staff-side tool, which was never
+ forbidden — it just was never built. `update-appointment.ts` only ever had
+ confirm/reject/attendance; nothing could change a booking's time.
+
+### What was built
+
+**1. `src/lib/booking/reschedule-appointment.ts`** — `rescheduleAppointment`
+moves an appointment to a new date+time **in place**: the same row id, source,
+reason and payment fields survive, because cancellation is a status and
+history is never rewritten. Guards, each with a typed outcome the UI can act
+on: VALIDATION_ERROR (zod shape) → NOT_FOUND_OR_DENIED (missing/RLS-hidden,
+also the zero-rows race if state changed between read and write) →
+ALREADY_CANCELLED → PAST_APPOINTMENT (date ≤ today; the records ledger is
+closed to edits) → SAME_SLOT → CLOSED_DATE (pre-check on
+availability_exceptions, same documented raciness as create-appointment) →
+SLOT_TAKEN (translate `23505`/`uq_appointments_slot` from the partial index,
+which is also the concurrency backstop). Runs on the CALLER'S OWN RLS-bound
+client with no in-function role checks, mirroring update-appointment.ts: the
+`appointments_update_staff` policy is the authority, and a patient session's
+UPDATE matches zero rows. The write is additionally scoped
+`.eq("status", row.status)` so a cancel landing between read and write can
+never be resurrected.
+
+**2. "Move" dialog on All appointments** (`receptionist/appointments`). The
+Move button appears on PENDING/CONFIRMED rows dated in the future (same
+guard as the lib, so the button never leads to a guaranteed refusal). It
+opens a dialog embedding the shared `SlotPicker` — same calendar and
+open-time fetch the booking forms use, so what the desk sees is exactly what
+a patient could have requested. Confirm calls the lib; SLOT_TAKEN gets the
+friendly "taken while you were choosing" toast; success toasts state both
+times: "Moved from {old} to {new}".
+
+**3. SMS on moved CONFIRMED appointments.** A PENDING request needs no text
+(nobody was promised anything yet). A CONFIRMED one was already texted its
+time, so after a successful move the dialog POSTs the existing
+`/api/sms/send-confirmation` (receptionist-session route, role-checked) —
+the message reads the row *after* the move, so it states the new time
+(verified by T9). Delivered/failed toast wording mirrors the pending page's
+banner honesty: a failed text says to call the patient. No new `sms_type`:
+the `sms_type` enum has only confirmation/reminder, and a moved-appointment
+re-text is honestly a confirmation of the new time; Reports' SMS mix stays
+ truthful without a migration.
+
+### Files touched
+- `src/lib/booking/reschedule-appointment.ts` (new)
+- `src/app/receptionist/appointments/page.tsx` (Move button + reschedule dialog)
+- `scripts/test-reschedule.ts` (new), `scripts/test-support.ts` (+1 test phone)
+
+### Deviations from spec
+None against a phase spec (none governs). Two design decisions worth the
+human's eye:
+1. **"Past" means already started, not just an earlier date** (human decision
+   2026-09-12, same day as the build): an appointment dated today whose start
+   time has not yet been reached is still movable — PAST_APPOINTMENT only
+   fires for earlier dates or a today-slot whose time has passed. The first
+   build refused all same-day moves; the human reversed it within the hour
+   and both sides of the boundary are now harnessed (T6b/T6c/T6d).
+2. **No `sms_type` addition.** Re-texts reuse the confirmation type. If the
+   clinic later wants "reschedule" as its own report line, that is a small
+   migration + enum value away.
+
+### Test results
+
+`npx tsx scripts/test-reschedule.ts` — **T1–T9 + T6b/T6c/T6d ALL PASS** (run
+order: `db reset` → `seed-staff` → this script; reset-required like the other
+harnesses, self-sweeping via test-support):
+
+| # | Check | Result |
+|---|---|---|
+| T1 | PENDING future moves, same row id kept | PASS |
+| T2 | CONFIRMED moves into the just-vacated slot, status kept | PASS (also proves vacated slots are reusable) |
+| T3 | same slot refused (SAME_SLOT) | PASS |
+| T4 | occupied slot refused (SLOT_TAKEN via uq_appointments_slot) | PASS |
+| T5 | closed date refused (CLOSED_DATE) | PASS |
+| T6 | past appointment refused (PAST_APPOINTMENT) | PASS |
+| T6b | today, already started → refused | PASS |
+| T6c | today, not yet started → moves | PASS (human decision) |
+| T6d | move INTO a passed today-time refused (lib-side, not just UI) | PASS |
+| T7 | cancelled refused (ALREADY_CANCELLED) | PASS |
+| T8 | patient session denied, row untouched (RLS) | PASS |
+| T9 | moved CONFIRMED re-texts via confirmation path, states NEW time (dry-run) | PASS |
+
+T6b/T6c/T6d skip politely near midnight (their fixtures need ±90 minutes of
+runway); every normal test window exercises them.
+
+**Browser test of the same-day Move** (`scripts/test-reschedule-browser.ts`,
+written after the human asked for exactly this check): drives the real UI in
+Chromium — receptionist login, All appointments row for a fixture patient,
+Move button on a TODAY slot +60–120 min ahead, dialog, target slot pick, the
+"Moved from … to …" toast — then asserts the DB row and sms_logs. **9/9 PASS**
+(the move itself, both times in the toast, same-row move in the DB, no SMS on
+a PENDING move, no page errors). Rerunnable: sweeps its own fixture rows and
+auth user, requires `SEMAPHORE_DRY_RUN=true`, needs the dev server running.
+Fixture environment notes learned on the way, both handled in-script:
+- The seed only covers Mon–Fri, so on a weekend the test inserts a temporary
+  Saturday hours row (or widens an existing one to 23:00) and **restores or
+  removes it in a `finally`** — an earlier crashed run leaked a 09:00–17:00
+  Saturday row, which was deleted by hand and is now impossible by design.
+- react-day-picker v10 stamps `button[data-day]` in **locale format**
+  ("9/12/2026"), so calendar clicks must match by parsed date, not string
+  prefix (same approach the e2e smoke test already used).
+
+Regression: `tsc --noEmit` clean; `npm run lint` clean (0/0); `npm run build`
+all 17 routes; screenshot harness **26/26** (13 routes × desktop + mobile).
+
+### Known issues / follow-ups
+- The harness initially failed 5/9 from my own bad fixture arithmetic (targets
+  colliding with occupied fixture slots); the lib was never at fault. Fixed in
+  the harness; kept the vacated-slot-reuse assertion as a permanent check.
+- No patient-facing surface changed; the patient still sees their appointment
+  at its new time with no action available, per the role boundaries.
+- Reminders: a moved appointment keeps its `sms_logs` history; the reminder
+  cron dedup checks for *sent reminders*, so a moved appointment will be
+  reminded for its new time correctly, and will not be double-reminded for
+  the old window it left.
 
 ---
