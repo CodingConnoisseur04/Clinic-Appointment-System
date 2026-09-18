@@ -390,3 +390,46 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1, "zero" 1;
 }
+
+/* ─── Print: the reports page as a panel handout ───────────────────── */
+/* The human presents to a barangay panel: printing /reports must yield a
+   clean paper document, not a screenshot of the chrome. Chrome (sidebar,
+   filters, buttons, sticky picker) drops; charts and cards print in full.
+   Print colors are pinned with print-color-adjust so the gold/primary
+   marks and chart fills survive ink. */
+@media print {
+  /* Kill animations that could capture mid-frame on print. */
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* The app shell's own controls never carry data. */
+  [data-slot="sidebar"],
+  aside[class*="sticky"],
+  [role="status"],
+  button,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Full-bleed warm paper, black ink that carries the palette only where
+     it is data (gold marks, chart strokes). */
+  body {
+    background: white !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Cards keep their borders so the handout still reads as the ledger. */
+  [data-slot="card"] {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .print-chart svg {
+    max-width: 100%;
+  }
+}

@@ -1,7 +1,18 @@
 "use client";
 
+"use client";
+
 import { useEffect, useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import {
   getNoShowReport,
@@ -11,11 +22,14 @@ import {
   getAppointmentSummary,
   type AppointmentSummary,
 } from "@/lib/reports/get-appointment-summary";
-import { getSmsReport, type SmsReport } from "@/lib/reports/get-sms-report";
 import {
   getCollectionSummary,
   type CollectionSummary,
 } from "@/lib/reports/get-collection-summary";
+import {
+  getPeakHours,
+  type PeakHoursReport,
+} from "@/lib/reports/get-peak-hours";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toDateInput } from "@/components/booking/slot-picker";
@@ -24,8 +38,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { downloadAppointmentCsv } from "@/lib/reports/download-csv";
 import { PageMasthead } from "@/components/console/page-masthead";
 import { ProportionBar } from "@/components/console/proportion-bar";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import {
+  formatDateLong,
+  formatDateShort,
+  formatTime12h,
+} from "@/lib/utils";
 import { Download } from "lucide-react";
-import { cn, formatPeso } from "@/lib/utils";
+import { formatPeso } from "@/lib/utils";
 
 const C = {
   primary: "var(--primary)",
@@ -34,6 +54,20 @@ const C = {
   stone: "#a8a29e",
   deep: "var(--field)",
 };
+
+// Chart theming: gold is the money color; the config drives tooltip labels.
+const collectionsChartConfig = {
+  total: { label: "Collected", color: "var(--gold)" },
+} satisfies ChartConfig;
+
+const peakChartConfig = {
+  count: { label: "Appointments", color: "var(--primary)" },
+} satisfies ChartConfig;
+
+// "Fri 11 Sep" - the axis tick shape, from the shared date formatter.
+function shortDay(iso: string): string {
+  return formatDateShort(iso);
+}
 
 export default function ReportsPage() {
   const supabase = createClient();
@@ -46,8 +80,8 @@ export default function ReportsPage() {
   });
   const [noShow, setNoShow] = useState<NoShowReport>();
   const [summary, setSummary] = useState<AppointmentSummary>();
-  const [sms, setSms] = useState<SmsReport>();
   const [collections, setCollections] = useState<CollectionSummary>();
+  const [peakHours, setPeakHours] = useState<PeakHoursReport>();
   const [downloading, setDownloading] = useState(false);
 
   const reportRangeStr = useMemo(() => {
@@ -62,17 +96,17 @@ export default function ReportsPage() {
     if (!reportRangeStr) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const [ns, sum, smsReport, collectionsReport] = await Promise.all([
+      const [ns, sum, collectionsReport, peaks] = await Promise.all([
         getNoShowReport(supabase, reportRangeStr),
         getAppointmentSummary(supabase, reportRangeStr),
-        getSmsReport(supabase, reportRangeStr),
         getCollectionSummary(supabase, reportRangeStr),
+        getPeakHours(supabase, reportRangeStr),
       ]);
       if (!cancelled) {
         setNoShow(ns);
         setSummary(sum);
-        setSms(smsReport);
         setCollections(collectionsReport);
+        setPeakHours(peaks);
       }
     }, 0);
     return () => {
@@ -81,15 +115,7 @@ export default function ReportsPage() {
     };
   }, [supabase, reportRangeStr]);
 
-  const smsTotal =
-    (sms?.confirmationSent ?? 0) +
-    (sms?.confirmationFailed ?? 0) +
-    (sms?.reminderSent ?? 0) +
-    (sms?.reminderFailed ?? 0);
-  const smsDelivered = (sms?.confirmationSent ?? 0) + (sms?.reminderSent ?? 0);
-  const smsRate = smsTotal === 0 ? 0 : Math.round((smsDelivered / smsTotal) * 100);
-
-  const loading = !summary || !noShow || !sms || !collections;
+  const loading = !summary || !noShow || !collections || !peakHours;
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,8 +161,7 @@ export default function ReportsPage() {
               className="mx-auto"
             />
             <p className="text-xs text-muted-foreground">
-              Everything below covers the days you highlight. The CSV exports the
-              same range.
+              CSV exports this range.
             </p>
           </CardContent>
         </Card>
@@ -153,10 +178,9 @@ export default function ReportsPage() {
                 <>
                   <div className="flex items-end gap-4">
                     <p className="stat-figure">{formatPeso(collections.totalCollected)}</p>
-                    <p className="max-w-xs pb-1.5 text-xs text-pretty text-muted-foreground">
-                      collected across {collections.paidCount} paid appointment
-                      {collections.paidCount === 1 ? "" : "s"} dated in this
-                      range, whatever later happened to the visit.
+                    <p className="pb-1.5 text-xs text-muted-foreground">
+                      across {collections.paidCount} paid appointment
+                      {collections.paidCount === 1 ? "" : "s"}
                     </p>
                   </div>
                   <ProportionBar
@@ -166,6 +190,55 @@ export default function ReportsPage() {
                       { label: "GCash", value: collections.gcashTotal, color: C.gold },
                     ]}
                   />
+                  {collections.perDay.length > 0 && (
+                    <div className="print-chart">
+                      <p className="text-meta text-muted-foreground uppercase">
+                        Collected per day
+                      </p>
+                      <ChartContainer
+                        config={collectionsChartConfig}
+                        className="mt-2 h-36 w-full sm:h-44"
+                      >
+                        <AreaChart data={collections.perDay} margin={{ left: 4, right: 8, top: 8 }}>
+                          <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                          <XAxis
+                            dataKey="date"
+                            tickLine={false}
+                            axisLine={false}
+                            minTickGap={28}
+                            tickFormatter={shortDay}
+                          />
+                          <YAxis
+                            width={52}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v: number) => `${v.toLocaleString("en-PH")}`}
+                          />
+                          <ChartTooltip
+                            content={
+                              <ChartTooltipContent
+                                formatter={(value) => (
+                                  <span className="figure font-medium">
+                                    {formatPeso(Number(value))}
+                                  </span>
+                                )}
+                                labelFormatter={(label) => formatDateLong(String(label))}
+                              />
+                            }
+                          />
+                          <Area
+                            dataKey="total"
+                            type="monotone"
+                            stroke="var(--gold)"
+                            strokeWidth={2}
+                            fill="var(--gold)"
+                            fillOpacity={0.14}
+                            isAnimationActive={false}
+                          />
+                        </AreaChart>
+                      </ChartContainer>
+                    </div>
+                  )}
                   <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
                     {[
                       {
@@ -194,20 +267,80 @@ export default function ReportsPage() {
                     ))}
                   </dl>
                   <div className="flex items-baseline justify-between gap-3 border-t border-border pt-4">
-                    <p className="text-xs text-pretty text-muted-foreground">
-                      Senior/PWD discounts granted in this range (what the desk
-                      recorded off the normal fee).
+                    <p className="text-xs text-muted-foreground">
+                      Senior/PWD discounts granted
                     </p>
                     <p className="figure shrink-0 text-sm font-medium">
                       {formatPeso(collections.discountsGranted)}
                     </p>
                   </div>
-                  <p className="border-t border-border pt-4 text-xs text-pretty text-muted-foreground">
-                    Money is counted on the day the appointment was dated - the
-                    day the fee was taken - not the day the record was created.
-                    “Prepaid no-shows” is money collected for visits that did
-                    not happen; it stays in the total, never quietly dropped.
-                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="print-chart">
+            <CardHeader>
+              <CardTitle>When do we get busy?</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              {loading ? (
+                <Skeleton className="h-20 rounded-lg" />
+              ) : peakHours.slots.length === 0 ? (
+                <p className="text-sm text-pretty text-muted-foreground">
+                  No appointments dated in this range yet.
+                </p>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-3">
+                    <p className="stat-figure">
+                      {formatTime12h(peakHours.peakTime ?? "")}
+                    </p>
+                    <p className="pb-1 text-xs text-muted-foreground">
+                      busiest slot · {peakHours.peakCount} appointment
+                      {peakHours.peakCount === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <ChartContainer
+                    config={peakChartConfig}
+                    className="h-40 w-full sm:h-48"
+                  >
+                    <BarChart
+                      data={peakHours.slots}
+                      margin={{ left: 4, right: 8, top: 8 }}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="time"
+                        tickLine={false}
+                        axisLine={false}
+                        minTickGap={16}
+                        tickFormatter={(t: string) => formatTime12h(t).replace(" ", "")}
+                      />
+                      <YAxis
+                        width={28}
+                        allowDecimals={false}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            formatter={(value) => (
+                              <span className="figure font-medium">{String(value)}</span>
+                            )}
+                            labelFormatter={(label) => formatTime12h(String(label))}
+                          />
+                        }
+                      />
+                      <Bar
+                        dataKey="count"
+                        fill="var(--primary)"
+                        radius={[3, 3, 0, 0]}
+                        isAnimationActive={false}
+                      />
+                    </BarChart>
+                  </ChartContainer>
                 </>
               )}
             </CardContent>
@@ -264,9 +397,9 @@ export default function ReportsPage() {
                       {noShow.noShowRatePercent}
                       <span className="stat-figure-unit">%</span>
                     </p>
-                    <p className="max-w-xs pb-1.5 text-xs text-pretty text-muted-foreground">
-                      of the {noShow.totalPastConfirmed} confirmed appointments
-                      that have already happened in this range did not turn up.
+                    <p className="pb-1.5 text-xs text-muted-foreground">
+                      of {noShow.totalPastConfirmed} past confirmed appointment
+                      {noShow.totalPastConfirmed === 1 ? "" : "s"}
                     </p>
                   </div>
                   <ProportionBar
@@ -285,79 +418,11 @@ export default function ReportsPage() {
                       },
                     ]}
                   />
-                  <p className="border-t border-border pt-4 text-xs text-pretty text-muted-foreground">
-                    “Never marked” is counted as a no-show here and only here;
-                    it is never written back onto those appointments. Once the
-                    front desk marks attendance, this split stops guessing.
-                  </p>
                 </>
               )}
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Did the texts go out?</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              {loading ? (
-                <Skeleton className="h-20 rounded-lg" />
-              ) : (
-                <>
-                  <div className="flex items-end gap-4">
-                    <p
-                      className={cn(
-                        "stat-figure",
-                        smsTotal > 0 && smsDelivered < smsTotal && "text-[var(--destructive)]"
-                      )}
-                    >
-                      {smsRate}
-                      <span className="stat-figure-unit">%</span>
-                    </p>
-                    <p className="max-w-xs pb-1.5 text-xs text-pretty text-muted-foreground">
-                      reached the patient: {smsDelivered} of {smsTotal} texts
-                      sent in this range.
-                    </p>
-                  </div>
-                  <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
-                    {[
-                      { label: "Confirmations sent", value: sms.confirmationSent },
-                      {
-                        label: "Confirmations failed",
-                        value: sms.confirmationFailed,
-                        bad: true,
-                      },
-                      { label: "Reminders sent", value: sms.reminderSent },
-                      {
-                        label: "Reminders failed",
-                        value: sms.reminderFailed,
-                        bad: true,
-                      },
-                    ].map((item) => (
-                      <div key={item.label} className="bg-card px-3 py-3">
-                        <dt className="text-meta text-muted-foreground uppercase">
-                          {item.label}
-                        </dt>
-                        <dd
-                          className={cn(
-                            "figure mt-1 text-lg",
-                            item.bad && item.value > 0 && "text-[var(--destructive)]"
-                          )}
-                        >
-                          {item.value}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <p className="text-xs text-pretty text-muted-foreground">
-                    Texts are the clinic&apos;s only notification channel and are
-                    never retried automatically. A failure here has to be followed
-                    up with a phone call.
-                  </p>
-                </>
-              )}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

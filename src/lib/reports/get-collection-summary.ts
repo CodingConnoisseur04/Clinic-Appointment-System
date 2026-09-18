@@ -18,6 +18,10 @@ export type CollectionSummary = {
   // senior/PWD discounts (RA 9994 / RA 10754). The desk records it per
   // appointment; this only adds up what was recorded.
   discountsGranted: number;
+  // Per-day totals across the range, date-ordered with NO gap-filling: a day
+  // with no logged fees is simply absent, so the chart never draws a fake
+  // zero for a day the desk just did not log money.
+  perDay: { date: string; total: number }[];
 };
 
 const rangeSchema = z.object({
@@ -36,6 +40,7 @@ function empty(): CollectionSummary {
     attendedCount: 0,
     prepaidNoShowTotal: 0,
     discountsGranted: 0,
+    perDay: [],
   };
 }
 
@@ -59,13 +64,17 @@ export async function getCollectionSummary(
   if (error || !data) return empty();
 
   const summary = empty();
+  const dailyTotals = new Map<string, number>();
   let sum = 0;
   for (const row of data as {
+    appointment_date: string;
     payment_method: string | null;
     payment_amount: number | null;
     discount_amount: number | null;
     attendance: string | null;
   }[]) {
+    const dayTotal = dailyTotals.get(row.appointment_date) ?? 0;
+    dailyTotals.set(row.appointment_date, dayTotal + Number(row.payment_amount ?? 0));
     const amount = Number(row.payment_amount ?? 0);
     sum += amount;
     if (row.discount_amount !== null && row.discount_amount !== undefined) {
@@ -83,5 +92,8 @@ export async function getCollectionSummary(
   }
   summary.totalCollected = sum;
   summary.averageFee = summary.paidCount === 0 ? 0 : sum / summary.paidCount;
+  summary.perDay = [...dailyTotals.entries()]
+    .map(([date, total]) => ({ date, total }))
+    .sort((a, b) => a.date.localeCompare(b.date));
   return summary;
 }
