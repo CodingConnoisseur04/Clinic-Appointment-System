@@ -12,6 +12,10 @@ import {
   type AppointmentSummary,
 } from "@/lib/reports/get-appointment-summary";
 import { getSmsReport, type SmsReport } from "@/lib/reports/get-sms-report";
+import {
+  getCollectionSummary,
+  type CollectionSummary,
+} from "@/lib/reports/get-collection-summary";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toDateInput } from "@/components/booking/slot-picker";
@@ -21,7 +25,7 @@ import { downloadAppointmentCsv } from "@/lib/reports/download-csv";
 import { PageMasthead } from "@/components/console/page-masthead";
 import { ProportionBar } from "@/components/console/proportion-bar";
 import { Download } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPeso } from "@/lib/utils";
 
 const C = {
   primary: "var(--primary)",
@@ -43,6 +47,7 @@ export default function ReportsPage() {
   const [noShow, setNoShow] = useState<NoShowReport>();
   const [summary, setSummary] = useState<AppointmentSummary>();
   const [sms, setSms] = useState<SmsReport>();
+  const [collections, setCollections] = useState<CollectionSummary>();
   const [downloading, setDownloading] = useState(false);
 
   const reportRangeStr = useMemo(() => {
@@ -57,15 +62,17 @@ export default function ReportsPage() {
     if (!reportRangeStr) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const [ns, sum, smsReport] = await Promise.all([
+      const [ns, sum, smsReport, collectionsReport] = await Promise.all([
         getNoShowReport(supabase, reportRangeStr),
         getAppointmentSummary(supabase, reportRangeStr),
         getSmsReport(supabase, reportRangeStr),
+        getCollectionSummary(supabase, reportRangeStr),
       ]);
       if (!cancelled) {
         setNoShow(ns);
         setSummary(sum);
         setSms(smsReport);
+        setCollections(collectionsReport);
       }
     }, 0);
     return () => {
@@ -82,7 +89,7 @@ export default function ReportsPage() {
   const smsDelivered = (sms?.confirmationSent ?? 0) + (sms?.reminderSent ?? 0);
   const smsRate = smsTotal === 0 ? 0 : Math.round((smsDelivered / smsTotal) * 100);
 
-  const loading = !summary || !noShow || !sms;
+  const loading = !summary || !noShow || !sms || !collections;
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,6 +142,68 @@ export default function ReportsPage() {
         </Card>
 
         <div className="flex flex-col gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>How much was collected?</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              {loading ? (
+                <Skeleton className="h-20 rounded-lg" />
+              ) : (
+                <>
+                  <div className="flex items-end gap-4">
+                    <p className="stat-figure">{formatPeso(collections.totalCollected)}</p>
+                    <p className="max-w-xs pb-1.5 text-xs text-pretty text-muted-foreground">
+                      collected across {collections.paidCount} paid appointment
+                      {collections.paidCount === 1 ? "" : "s"} dated in this
+                      range, whatever later happened to the visit.
+                    </p>
+                  </div>
+                  <ProportionBar
+                    emptyLabel="No fees logged in this range yet."
+                    segments={[
+                      { label: "Cash", value: collections.cashTotal, color: C.primary },
+                      { label: "GCash", value: collections.gcashTotal, color: C.gold },
+                    ]}
+                  />
+                  <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+                    {[
+                      {
+                        label: "Average fee",
+                        value: formatPeso(Math.round(collections.averageFee * 100) / 100),
+                      },
+                      {
+                        label: "Paid visits",
+                        value: String(collections.attendedCount),
+                      },
+                      {
+                        label: "From attended",
+                        value: formatPeso(collections.attendedTotal),
+                      },
+                      {
+                        label: "Prepaid no-shows",
+                        value: formatPeso(collections.prepaidNoShowTotal),
+                      },
+                    ].map((item) => (
+                      <div key={item.label} className="bg-card px-3 py-3">
+                        <dt className="text-meta text-muted-foreground uppercase">
+                          {item.label}
+                        </dt>
+                        <dd className="figure mt-1 text-lg">{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="border-t border-border pt-4 text-xs text-pretty text-muted-foreground">
+                    Money is counted on the day the appointment was dated — the
+                    day the fee was taken — not the day the record was created.
+                    “Prepaid no-shows” is money collected for visits that did
+                    not happen; it stays in the total, never quietly dropped.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Volume and mix</CardTitle>

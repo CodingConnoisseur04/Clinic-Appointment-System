@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   markAttendance,
@@ -29,9 +29,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppointments, type AppointmentRow } from "@/hooks/use-appointments";
+import { getClinicSettings } from "@/lib/clinic-settings";
 import {
   dayGroupHeading,
   formatDateLong,
+  formatPeso,
   formatTime12h,
   todayIso,
 } from "@/lib/utils";
@@ -60,6 +62,21 @@ export default function AppointmentsPage() {
     row: AppointmentRow;
     mark: "ATTENDED" | "NO_SHOW";
   } | null>(null);
+  const [attMethod, setAttMethod] = useState<"cash" | "gcash">("cash");
+  const [attAmount, setAttAmount] = useState("");
+  const [attRef, setAttRef] = useState("");
+  const [feeDefault, setFeeDefault] = useState("");
+
+  // Fee setting prefills the pay-after amount in the attendance dialog.
+  useEffect(() => {
+    let cancelled = false;
+    getClinicSettings(supabase).then((s) => {
+      if (!cancelled) setFeeDefault(s.consultation_fee ?? "");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
 
   const today = todayIso();
   // Minutes since local midnight, captured at render. Mirrors the reschedule
@@ -252,6 +269,14 @@ export default function AppointmentsPage() {
                             {row.payment_method && (
                               <span className="text-xs text-muted-foreground">
                                 Paid by {row.payment_method === "cash" ? "cash" : "GCash"}
+                                {row.payment_amount !== null && (
+                                  <>
+                                    {" · "}
+                                    <span className="figure text-foreground">
+                                      {formatPeso(Number(row.payment_amount))}
+                                    </span>
+                                  </>
+                                )}
                                 {row.payment_reference && (
                                   <>
                                     {" · "}
@@ -278,9 +303,16 @@ export default function AppointmentsPage() {
                                   size="sm"
                                   variant="outline"
                                   className="h-8"
-                                  onClick={() =>
-                                    setAttendanceTarget({ row, mark: "ATTENDED" })
-                                  }
+                                  onClick={() => {
+                                    setAttMethod("cash");
+                                    setAttAmount(
+                                      row.payment_amount !== null
+                                        ? String(row.payment_amount)
+                                        : feeDefault
+                                    );
+                                    setAttRef(row.payment_reference ?? "");
+                                    setAttendanceTarget({ row, mark: "ATTENDED" });
+                                  }}
                                 >
                                   Attended
                                 </Button>
@@ -479,6 +511,53 @@ export default function AppointmentsPage() {
               ) : null}
             </DialogDescription>
           </DialogHeader>
+          {attendanceTarget?.mark === "ATTENDED" && (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-muted-foreground">
+                {attendanceTarget.row.payment_amount !== null
+                  ? `Fee already logged: ${formatPeso(Number(attendanceTarget.row.payment_amount))} — adjust below only if the visit was charged differently.`
+                  : "No fee logged yet — if payment was taken at confirmation, the amount is on the record; log it here if it was taken now."}
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <Label>Payment method</Label>
+                <Select
+                  value={attMethod}
+                  onValueChange={(v) => setAttMethod(v as "cash" | "gcash")}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="gcash">GCash</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="att-amount">Fee collected (₱)</Label>
+                <Input
+                  id="att-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className="figure"
+                  value={attAmount}
+                  onChange={(e) => setAttAmount(e.target.value)}
+                  placeholder={feeDefault ? `e.g. ${feeDefault}` : "e.g. 500"}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="att-ref">Payment reference</Label>
+                <Input
+                  id="att-ref"
+                  value={attRef}
+                  onChange={(e) => setAttRef(e.target.value)}
+                  placeholder="Receipt number, or GCash reference"
+                />
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAttendanceTarget(null)}>
               Not now
@@ -488,11 +567,26 @@ export default function AppointmentsPage() {
                 const t = attendanceTarget;
                 setAttendanceTarget(null);
                 if (!t) return;
+                const amountRaw = attAmount.trim();
+                const amount = amountRaw === "" ? undefined : Number(amountRaw);
+                if (amount !== undefined && (!Number.isFinite(amount) || amount < 0)) {
+                  toast.error("Fee must be a number, zero or more.");
+                  return;
+                }
                 await act(
                   () =>
                     markAttendance(supabase, {
                       appointmentId: t.row.id,
                       attendance: t.mark,
+                      ...(t.mark === "ATTENDED"
+                        ? {
+                            payment: {
+                              method: attMethod,
+                              reference: attRef || undefined,
+                              amount,
+                            },
+                          }
+                        : {}),
                     }),
                   t.mark === "ATTENDED" ? "Marked attended." : "Marked no-show."
                 );

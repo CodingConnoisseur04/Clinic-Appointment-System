@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ClinicSettings = {
   receptionist_phone: string;
+  // Whole pesos, prefilled into every payment dialog. Seeded to "500" in the
+  // migration; the clinic changes it in Settings.
+  consultation_fee: string;
 };
 
 /*
@@ -13,6 +16,7 @@ export const PLACEHOLDER_PHONE = "(088) 000-0000";
 
 const DEFAULTS: ClinicSettings = {
   receptionist_phone: PLACEHOLDER_PHONE,
+  consultation_fee: "500",
 };
 
 export function isPlaceholderPhone(value: string | null | undefined): boolean {
@@ -34,6 +38,7 @@ export async function getClinicSettings(
   );
   return {
     receptionist_phone: map.get("receptionist_phone") ?? DEFAULTS.receptionist_phone,
+    consultation_fee: map.get("consultation_fee") ?? DEFAULTS.consultation_fee,
   };
 }
 

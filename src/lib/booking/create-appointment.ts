@@ -11,6 +11,7 @@ export type CreateAppointmentInput = {
   status?: "PENDING" | "CONFIRMED"; // default 'PENDING'
   paymentMethod?: "cash" | "gcash";
   paymentReference?: string;
+  paymentAmount?: number | undefined; // pesos; logged at the desk, never computed
 };
 
 export type CreateAppointmentResult =
@@ -31,6 +32,11 @@ const inputSchema = z.object({
   status: z.enum(["PENDING", "CONFIRMED"]).optional(),
   paymentMethod: z.enum(["cash", "gcash"]).optional(),
   paymentReference: z.string().optional(),
+  paymentAmount: z
+    .number()
+    .min(0, "Fee cannot be negative")
+    .max(1000000, "Fee looks too large")
+    .optional(),
 });
 
 // Creates an appointment through the CALLER'S OWN RLS-bound client — never
@@ -84,6 +90,7 @@ export async function createAppointment(
       handled_by: input.handledBy ?? null,
       payment_method: input.paymentMethod ?? null,
       payment_reference: input.paymentReference ?? null,
+      payment_amount: input.paymentAmount ?? null,
     })
     .select("id")
     .single();

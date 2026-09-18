@@ -10,6 +10,7 @@ type CsvRow = {
   reason: string;
   attendance: string;
   payment_method: string;
+  payment_amount: string;
   payment_reference: string;
 };
 
@@ -27,7 +28,7 @@ export async function downloadAppointmentCsv(
   const { data, error } = await supabase
     .from("appointments")
     .select(
-      "appointment_date, appointment_time, status, source, reason, attendance, payment_method, payment_reference, patients(full_name, phone)"
+      "appointment_date, appointment_time, status, source, reason, attendance, payment_method, payment_amount, payment_reference, patients(full_name, phone)"
     )
     .gte("appointment_date", range.from)
     .lte("appointment_date", range.to)
@@ -48,6 +49,7 @@ export async function downloadAppointmentCsv(
     "Reason",
     "Attendance",
     "Payment Method",
+    "Fee (PHP)",
     "Payment Reference",
   ];
 
@@ -66,6 +68,7 @@ export async function downloadAppointmentCsv(
         reason: String(row.reason ?? ""),
         attendance: String(row.attendance ?? ""),
         payment_method: String(row.payment_method ?? ""),
+        payment_amount: row.payment_amount === null || row.payment_amount === undefined ? "" : String(row.payment_amount),
         payment_reference: String(row.payment_reference ?? ""),
       };
     }
@@ -84,6 +87,7 @@ export async function downloadAppointmentCsv(
         row.reason,
         row.attendance,
         row.payment_method,
+        row.payment_amount,
         row.payment_reference,
       ]
         .map(escapeCsv)

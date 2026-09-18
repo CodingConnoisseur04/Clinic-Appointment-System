@@ -33,6 +33,14 @@ export function formatTime12h(time24: string): string {
   return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
+/** "₱500" / "₱1,250.50" — the one peso formatter, used everywhere a fee prints. */
+export function formatPeso(amount: number): string {
+  return `₱${amount.toLocaleString("en-PH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`
+}
+
 /*
  * Dates arrive from Postgres as plain "YYYY-MM-DD". Parsing them with
  * `new Date("2026-09-11")` reads them as UTC midnight and can render the

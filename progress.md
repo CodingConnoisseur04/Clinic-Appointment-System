@@ -19,6 +19,16 @@ For details on what happened in a phase, see changelog.md.
 **Status values:** Not started → Planning (Claude Chat) → Plan mode (OpenCode) →
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
 
+## Upgrade track (post-phase plan, ad-hoc per agreed approach)
+
+| # | Branch | Feature | Status | Notes |
+|---|--------|---------|--------|-------|
+| 1 | feat/fee-collections | Fee amount logging + collections report | Closed | 9/9 harness, P3/P4/P5/P7/P8 regressions pass; policy leak + Semaphore response-shape bug found & fixed; merged to main |
+| 2 | feat/senior-pwd-priority | Senior/PWD priority lane + configurable discount | Not started | Needs #1 (discount applies to fee field) |
+| 3 | feat/reports-charts | Charts & visual reports | Not started | Collections card feeds in |
+| 4 | feat/ux-flow-polish | User-flow audit & polish (all surfaces) | Not started | |
+| 5 | feat/arch-cleanup | Architecture cleanup (god pages, raw queries, utils) | Not started | Last; extract-on-touch during 1–4 shrinks it |
+
 ## Current focus
 
 **Receptionist in-place reschedule: Closed — same-day browser test run by the

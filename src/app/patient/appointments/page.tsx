@@ -5,9 +5,11 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
   formatDateShort,
+  formatPeso,
   formatTime12h,
   todayIso,
 } from "@/lib/utils";
+import { getClinicSettings } from "@/lib/clinic-settings";
 import { PageMasthead } from "@/components/console/page-masthead";
 import { CLINIC } from "@/lib/brand";
 import { EmptyState } from "@/components/console/empty-state";
@@ -31,17 +33,19 @@ type AppointmentRow = {
   reason: string | null;
   payment_method: "cash" | "gcash" | null;
   payment_reference: string | null;
+  payment_amount: number | null;
 };
 
 export default function PatientAppointmentsPage() {
   const supabase = createClient();
   const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
+  const [feeSetting, setFeeSetting] = useState("");
   const [loading, setLoading] = useState(true);
 
   const fetchAppointments = useCallback(async () => {
     const { data } = await supabase
       .from("appointments")
-      .select("id, appointment_date, appointment_time, status, reason, payment_method, payment_reference")
+      .select("id, appointment_date, appointment_time, status, reason, payment_method, payment_reference, payment_amount")
       .order("appointment_date", { ascending: false })
       .order("appointment_time");
     return (data ?? []) as unknown as AppointmentRow[];
@@ -55,8 +59,14 @@ export default function PatientAppointmentsPage() {
         setLoading(false);
       }
     });
+    // The clinic's standard fee, so a confirmed appointment that has not had
+    // its payment logged yet still tells the patient what to bring. The
+    // clinic_settings read policy is public to authenticated users.
+    getClinicSettings(supabase).then((s) => {
+      if (!cancelled) setFeeSetting(s.consultation_fee ?? "");
+    });
     return () => { cancelled = true; };
-  }, [fetchAppointments]);
+  }, [fetchAppointments, supabase]);
 
   const today = todayIso();
   const upcoming = appointments
@@ -92,13 +102,25 @@ export default function PatientAppointmentsPage() {
           {row.reason && (
             <p className="text-sm text-pretty text-muted-foreground">{row.reason}</p>
           )}
-          {row.status === "CONFIRMED" && row.payment_method && (
+          {row.status === "CONFIRMED" && (
             <p className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
-              <span className="text-meta uppercase">
-                Paid by {row.payment_method === "cash" ? "cash" : "GCash"}
-              </span>
-              {row.payment_reference && (
-                <span className="figure text-foreground">{row.payment_reference}</span>
+              {row.payment_method ? (
+                <>
+                  <span className="text-meta uppercase">
+                    {row.payment_amount !== null && row.payment_amount !== undefined
+                      ? `${formatPeso(Number(row.payment_amount))} paid by ${row.payment_method === "cash" ? "cash" : "GCash"}`
+                      : `Paid by ${row.payment_method === "cash" ? "cash" : "GCash"}`}
+                  </span>
+                  {row.payment_reference && (
+                    <span className="figure text-foreground">{row.payment_reference}</span>
+                  )}
+                </>
+              ) : (
+                feeSetting && (
+                  <span className="text-meta uppercase">
+                    Fee: {formatPeso(Number(feeSetting))} — pay at the clinic
+                  </span>
+                )
               )}
             </p>
           )}

@@ -57,17 +57,28 @@ export async function sendSms(
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
     });
+    // Semaphore v4 returns a JSON ARRAY (one element per recipient) on
+    // success: [{ message_id, status: "Pending", ... }]. Errors come back as
+    // an object with an `error` field. Accept both shapes — checking only the
+    // object shape classified real, delivered sends as failures.
     const payload = (await res.json().catch(() => null)) as
       | { message_id?: string | number; error?: string }
+      | { message_id?: string | number; error?: string }[]
       | null;
+    const first = Array.isArray(payload) ? payload[0] : payload;
 
-    if (!res.ok || !payload?.message_id) {
+    if (!res.ok || !first?.message_id) {
+      // Semaphore reports in-band failures inside HTTP 200 (e.g. credit
+      // problems) in shapes other than {error} — so the fallback includes the
+      // FULL response body. A log line that says only "HTTP 200" is useless
+      // for diagnosing why the patient got no text.
       return {
         success: false,
-        error: payload?.error ?? `Semaphore returned HTTP ${res.status}`,
+        error: first?.error
+          ?? `Semaphore rejected send (HTTP ${res.status}): ${JSON.stringify(payload)}`,
       };
     }
-    return { success: true, messageId: String(payload.message_id) };
+    return { success: true, messageId: String(first.message_id) };
   } catch (e) {
     return {
       success: false,
