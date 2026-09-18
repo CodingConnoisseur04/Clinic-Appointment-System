@@ -29,6 +29,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppointments } from "@/hooks/use-appointments";
 import { getClinicSettings } from "@/lib/clinic-settings";
+import { applyDiscountPct } from "@/lib/booking/discount";
+import { SeniorPwdToggle } from "@/components/console/senior-pwd-mark";
 import { createClient } from "@/lib/supabase/client";
 import {
   formatDateLong,
@@ -53,6 +55,7 @@ export default function PendingPage() {
   const [confirmRef, setConfirmRef] = useState("");
   const [confirmAmount, setConfirmAmount] = useState("");
   const [feeDefault, setFeeDefault] = useState("");
+  const [discountPct, setDiscountPct] = useState(0);
 
   // The consultation fee setting prefills the amount field; the receptionist
   // can still override it per appointment (discounts, procedures, waived).
@@ -62,6 +65,7 @@ export default function PendingPage() {
       if (cancelled) return;
       const fee = s.consultation_fee ?? "";
       setFeeDefault(fee);
+      setDiscountPct(Number(s.senior_discount_percent) || 0);
     });
     return () => {
       cancelled = true;
@@ -172,9 +176,18 @@ export default function PendingPage() {
                     <p className="text-meta text-muted-foreground uppercase">
                       Patient
                     </p>
-                    <p className="mt-1 font-medium">
-                      {row.patients?.full_name ?? "Unknown patient"}
-                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <p className="font-medium">
+                        {row.patients?.full_name ?? "Unknown patient"}
+                      </p>
+                      {/* Flag editable right here: flips the patient's
+                          record, badge follows. */}
+                      <SeniorPwdToggle
+                        patientId={row.patients?.id}
+                        flagged={row.patients?.is_senior_pwd === true}
+                        onChanged={refresh}
+                      />
+                    </div>
                     {row.patients?.phone && (
                       <a
                         href={`tel:${row.patients.phone}`}
@@ -207,7 +220,13 @@ export default function PendingPage() {
                     onClick={() => {
                       setConfirmMethod("cash");
                       setConfirmRef("");
-                      setConfirmAmount(feeDefault);
+                      // Flagged patient: prefill the discounted amount, not
+                      // the flat fee. Still just a prefill — editable below.
+                      setConfirmAmount(
+                        row.patients?.is_senior_pwd === true
+                          ? String(applyDiscountPct(Number(feeDefault), discountPct))
+                          : feeDefault
+                      );
                       setConfirmTarget(row);
                     }}
                     className="h-9 flex-1 px-3.5 lg:flex-none"
@@ -277,6 +296,11 @@ export default function PendingPage() {
               <p className="text-xs text-muted-foreground">
                 Prefilled from Settings; change it here if this visit differs.
               </p>
+              {confirmTarget?.patients?.is_senior_pwd === true && discountPct > 0 && (
+                <p className="text-xs text-[var(--gold-ink)]">
+                  {discountPct}% senior/PWD discount applied - override if needed.
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="confirm-ref">Payment reference</Label>
@@ -314,6 +338,13 @@ export default function PendingPage() {
                       paymentMethod: confirmMethod,
                       paymentReference: confirmRef || undefined,
                       paymentAmount: amount,
+                      // The peso gap actually given, whatever the desk finally
+                      // charged — recomputed from the entered amount so an
+                      // override stays honest.
+                      discountAmount:
+                        amount !== undefined && Number(feeDefault) > amount
+                          ? Number(feeDefault) - amount
+                          : undefined,
                     }),
                   "Request confirmed."
                 );

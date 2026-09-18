@@ -12,6 +12,7 @@ export type CreateAppointmentInput = {
   paymentMethod?: "cash" | "gcash";
   paymentReference?: string;
   paymentAmount?: number | undefined; // pesos; logged at the desk, never computed
+  discountAmount?: number | undefined; // pesos given off the normal fee (senior/PWD); desk-recorded
 };
 
 export type CreateAppointmentResult =
@@ -36,6 +37,11 @@ const inputSchema = z.object({
     .number()
     .min(0, "Fee cannot be negative")
     .max(1000000, "Fee looks too large")
+    .optional(),
+  discountAmount: z
+    .number()
+    .min(0, "Discount cannot be negative")
+    .max(1000000, "Discount looks too large")
     .optional(),
 });
 
@@ -91,6 +97,7 @@ export async function createAppointment(
       payment_method: input.paymentMethod ?? null,
       payment_reference: input.paymentReference ?? null,
       payment_amount: input.paymentAmount ?? null,
+      discount_amount: input.discountAmount ?? null,
     })
     .select("id")
     .single();

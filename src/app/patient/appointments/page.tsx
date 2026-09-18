@@ -34,6 +34,7 @@ type AppointmentRow = {
   payment_method: "cash" | "gcash" | null;
   payment_reference: string | null;
   payment_amount: number | null;
+  discount_amount: number | null;
 };
 
 export default function PatientAppointmentsPage() {
@@ -45,7 +46,7 @@ export default function PatientAppointmentsPage() {
   const fetchAppointments = useCallback(async () => {
     const { data } = await supabase
       .from("appointments")
-      .select("id, appointment_date, appointment_time, status, reason, payment_method, payment_reference, payment_amount")
+      .select("id, appointment_date, appointment_time, status, reason, payment_method, payment_reference, payment_amount, discount_amount")
       .order("appointment_date", { ascending: false })
       .order("appointment_time");
     return (data ?? []) as unknown as AppointmentRow[];
@@ -110,6 +111,12 @@ export default function PatientAppointmentsPage() {
                     {row.payment_amount !== null && row.payment_amount !== undefined
                       ? `${formatPeso(Number(row.payment_amount))} paid by ${row.payment_method === "cash" ? "cash" : "GCash"}`
                       : `Paid by ${row.payment_method === "cash" ? "cash" : "GCash"}`}
+                    {row.discount_amount !== null && row.discount_amount > 0 && (
+                      <span className="text-[var(--gold-ink)]">
+                        {" "}
+                        · includes a {formatPeso(Number(row.discount_amount))} senior/PWD discount
+                      </span>
+                    )}
                   </span>
                   {row.payment_reference && (
                     <span className="figure text-foreground">{row.payment_reference}</span>
@@ -118,7 +125,7 @@ export default function PatientAppointmentsPage() {
               ) : (
                 feeSetting && (
                   <span className="text-meta uppercase">
-                    Fee: {formatPeso(Number(feeSetting))} — pay at the clinic
+                    Fee: {formatPeso(Number(feeSetting))} - pay at the clinic
                   </span>
                 )
               )}

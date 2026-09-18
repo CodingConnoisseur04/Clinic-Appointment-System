@@ -51,6 +51,7 @@ export async function confirmAppointment(
     paymentMethod: "cash" | "gcash";
     paymentReference?: string;
     paymentAmount?: number | undefined;
+    discountAmount?: number | undefined;
   }
 ): Promise<UpdateResult> {
   if (input.paymentAmount !== undefined &&
@@ -61,6 +62,14 @@ export async function confirmAppointment(
       message: "Fee cannot be negative",
     };
   }
+  if (input.discountAmount !== undefined &&
+      (!Number.isFinite(input.discountAmount) || input.discountAmount < 0)) {
+    return {
+      success: false,
+      reason: "VALIDATION_ERROR",
+      message: "Discount cannot be negative",
+    };
+  }
   return updateOne(
     supabase,
     input.appointmentId,
@@ -69,6 +78,7 @@ export async function confirmAppointment(
       payment_method: input.paymentMethod,
       payment_reference: input.paymentReference ?? null,
       payment_amount: input.paymentAmount ?? null,
+      discount_amount: input.discountAmount ?? null,
     },
     "PENDING"
   );
@@ -92,6 +102,7 @@ export async function markAttendance(
       method: "cash" | "gcash";
       reference?: string;
       amount?: number | undefined;
+      discountAmount?: number | undefined;
     };
   }
 ): Promise<UpdateResult> {
@@ -101,6 +112,14 @@ export async function markAttendance(
       success: false,
       reason: "VALIDATION_ERROR",
       message: "Fee cannot be negative",
+    };
+  }
+  if (input.payment?.discountAmount !== undefined &&
+      (!Number.isFinite(input.payment.discountAmount) || input.payment.discountAmount < 0)) {
+    return {
+      success: false,
+      reason: "VALIDATION_ERROR",
+      message: "Discount cannot be negative",
     };
   }
   return updateOne(
@@ -118,6 +137,7 @@ export async function markAttendance(
               payment_method: input.payment.method,
               payment_reference: input.payment.reference ?? null,
               payment_amount: input.payment.amount ?? null,
+              discount_amount: input.payment.discountAmount ?? null,
             }
           : {}),
     },

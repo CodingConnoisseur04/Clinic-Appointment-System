@@ -14,6 +14,10 @@ export type CollectionSummary = {
   attendedTotal: number;
   attendedCount: number;
   prepaidNoShowTotal: number;
+  // Sum of appointments.discount_amount in range: what the desk gave away as
+  // senior/PWD discounts (RA 9994 / RA 10754). The desk records it per
+  // appointment; this only adds up what was recorded.
+  discountsGranted: number;
 };
 
 const rangeSchema = z.object({
@@ -31,6 +35,7 @@ function empty(): CollectionSummary {
     attendedTotal: 0,
     attendedCount: 0,
     prepaidNoShowTotal: 0,
+    discountsGranted: 0,
   };
 }
 
@@ -46,7 +51,7 @@ export async function getCollectionSummary(
 
   const { data, error } = await supabase
     .from("appointments")
-    .select("appointment_date, payment_method, payment_amount, attendance")
+    .select("appointment_date, payment_method, payment_amount, discount_amount, attendance")
     .gte("appointment_date", range.from)
     .lte("appointment_date", range.to)
     .not("payment_amount", "is", null);
@@ -58,10 +63,14 @@ export async function getCollectionSummary(
   for (const row of data as {
     payment_method: string | null;
     payment_amount: number | null;
+    discount_amount: number | null;
     attendance: string | null;
   }[]) {
     const amount = Number(row.payment_amount ?? 0);
     sum += amount;
+    if (row.discount_amount !== null && row.discount_amount !== undefined) {
+      summary.discountsGranted += Number(row.discount_amount);
+    }
     summary.paidCount += 1;
     if (row.payment_method === "gcash") summary.gcashTotal += amount;
     else summary.cashTotal += amount;

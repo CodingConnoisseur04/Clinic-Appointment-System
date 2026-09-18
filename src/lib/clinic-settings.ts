@@ -5,6 +5,10 @@ export type ClinicSettings = {
   // Whole pesos, prefilled into every payment dialog. Seeded to "500" in the
   // migration; the clinic changes it in Settings.
   consultation_fee: string;
+  // Senior/PWD discount percent, prefilled into the fee math for flagged
+  // patients (RA 9994 / RA 10754 mandate 20%). Seeded to "20"; the clinic
+  // changes it in Settings. A prefill, never an enforcement.
+  senior_discount_percent: string;
 };
 
 /*
@@ -17,6 +21,7 @@ export const PLACEHOLDER_PHONE = "(088) 000-0000";
 const DEFAULTS: ClinicSettings = {
   receptionist_phone: PLACEHOLDER_PHONE,
   consultation_fee: "500",
+  senior_discount_percent: "20",
 };
 
 export function isPlaceholderPhone(value: string | null | undefined): boolean {
@@ -39,6 +44,8 @@ export async function getClinicSettings(
   return {
     receptionist_phone: map.get("receptionist_phone") ?? DEFAULTS.receptionist_phone,
     consultation_fee: map.get("consultation_fee") ?? DEFAULTS.consultation_fee,
+    senior_discount_percent:
+      map.get("senior_discount_percent") ?? DEFAULTS.senior_discount_percent,
   };
 }
 

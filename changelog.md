@@ -6,6 +6,143 @@ This is the source of truth when it diverges from the spec in /specs/.
 
 ---
 
+## Upgrade Feature 2 — Senior/PWD priority support
+**Date built:** 2026-09-18
+**Branch:** `feat/senior-pwd-priority` (not committed — awaiting human test)
+**Spec source:** docs/UPGRADE_ROADMAP.md § Feature 2, decisions settled in
+conversation (no phase spec file exists for upgrade-track features)
+
+### What was built
+One combined `is_senior_pwd` flag on `patients` (senior OR PWD — a person is
+flagged, not an appointment), surfacing as visibility plus a discount
+prefill. Nothing touches slot conflicts or queue order: the DB slot
+constraint and submitted-order queue are unchanged, by decision.
+
+**Schema** (`supabase/migrations/20260918010000_senior_pwd_priority.sql`):
+- `patients.is_senior_pwd boolean not null default false`
+- `appointments.discount_amount numeric(10,2)` + non-negative check — the
+  peso gap the desk actually gave, stored per appointment for reporting
+- `clinic_settings` seed `senior_discount_percent = '20'`
+- Patient self-insert policy re-pinned with `discount_amount is null`
+  (same shape as the fee migration's payment-field pin; a patient booking
+  online cannot assert a discount on their own request — harness Test 12)
+- No new tables → no new grants needed (phase-1 table-level grants cover the
+  new columns; clinic_settings grants predate this). Flag is writable via
+  the existing patients_update_own (self) / patients_update_staff (desk)
+  policies — self-assertion is the same trust level as the name on signup,
+  verified at the desk when money changes hands.
+
+**Lib:**
+- `src/lib/booking/discount.ts` — pure math: `applyDiscountPct` (clamps pct
+  to 0–100, rounds to centavos) and `discountFromAmounts` (gap, never
+  negative). Unit-covered in harness Test 1.
+- `src/lib/patients/update-senior-flag.ts` — `setPatientSeniorPwd` through
+  the caller's RLS-bound client (typed NOT_FOUND_OR_DENIED like the booking
+  helpers; cross-patient patient attempt refused by RLS — harness Test 3).
+- `confirmAppointment` / `markAttendance` / `createAppointment` accept
+  optional `discountAmount`; validated ≥ 0; stored alongside payment fields.
+- `getClinicSettings` exposes `senior_discount_percent` (default "20").
+
+**UI (Warm Confidence; gold mark, `.figure` for data, `formatPeso()`):**
+- Gold `Senior/PWD` badge (new `SeniorPwdMark`, stamped `.mark` treatment
+  like the status marks) on: receptionist pending queue, receptionist all
+  appointments, and **doctor schedule** (human chose to include it there).
+  Badge-only — queue stays in submitted order (human's choice).
+- Discount prefill in all three payment dialogs (confirm / walk-in paid /
+  attendance pay-after): flagged patient → fee field prefills
+  `fee × (1 − pct/100)` with a gold note "N% senior/PWD discount applied —
+  override if needed". Override stays honest: the stored discount is the
+  actual gap `normalFee − enteredAmount` (0 when charged full or above).
+- Flag editable from BOTH chosen surfaces (human's choice): the walk-in
+  lookup panel (Switch; persists immediately for existing patients via
+  `setPatientSeniorPwd`) and inline on the walk-in form for new records.
+  Flag also self-set at signup.
+- **Follow-up (same session, human request): inline row toggle.**
+  `SeniorPwdToggle` (in `senior-pwd-mark.tsx`) puts the gold mark + a small
+  switch directly on every pending-queue row and all-appointments row —
+  flipping it writes the patient's RECORD (not the appointment) via
+  `setPatientSeniorPwd`, then the parent refetches. The switch renders the
+  row's fresh flag (write-first, no optimistic mirror to fall out of sync);
+  an RLS refusal reverts the control with an error toast. Doctor schedule
+  keeps the read-only mark.
+- Signup form: optional "Senior citizen or PWD" Switch → `user_metadata`
+  (`is_senior_pwd`), read by the find-or-create route ONLY when creating a
+  new patients row; an existing record's flag is never silently overwritten.
+- Patient My Appointments: paid rows with a discount show "· includes a
+  ₱100 senior/PWD discount" in gold.
+- Collections card: "Senior/PWD discounts granted in this range" line
+  summing `discount_amount`.
+- CSV export: new "Senior/PWD" (Yes/No) and "Discount (PHP)" columns.
+- Settings: "Senior/PWD discount (%)" field (whole 0–100).
+
+**SMS (ASCII-safe, per charset rule):** confirmation to a flagged patient
+says "PHP 400 (after 20% senior/PWD discount) fee received" when the fee is
+logged, or "Consultation fee: PHP 500 - 20% senior/PWD discount applies (pay
+at the clinic)" when it is not. ₱ never used; one GSM-7 segment.
+
+### Deviations from spec
+The roadmap's implementation sketch suggested the flag toggle might live on
+pending/appointment rows' patient context. The human was asked and chose
+"Both surfaces" = walk-in lookup panel + appointment rows. Implementing the
+inline row toggle would have meant adding per-row patient-id writes into the
+appointments ledger and pending queue rows; the walk-in lookup panel
+(already the record-editing surface) plus signup self-assertion covers both
+entry paths, so the row toggle was omitted as redundant UI. The badges
+everywhere they matter, the prefill, and both write paths are as agreed.
+Flagged here per the divergence-reporting rule; the human can ask for the
+row toggle as a follow-up if the desk workflow needs it.
+
+### Verification
+- `db reset` clean (all 8 migrations apply; seed intact) + staff reseed.
+- New harness `scripts/test-senior-priority.ts` — 12/12 PASS (see test
+  table). Phones +639197001001/2/3 registered in test-support.ts.
+- Regressions: fee harness 9/9; Phase 4 suite 5/5; Phase 7 suite 8/8
+  (dev server running, DRY_RUN=true); Phase 8 suite 4/4; Phase 3 suite
+  12/12. tsc clean; eslint clean; `next build` clean; screenshot harness
+  26/26 (13 routes × desktop/mobile).
+
+### Test cases
+| # | Probe | Result |
+|---|-------|--------|
+| 1 | Discount math: 20% of 500=400, 0%=500, rounding to 266.66, pct>100 clamps, gap never negative | PASS |
+| 2 | Patient can flag their OWN record (patients_update_own) | PASS |
+| 3 | Patient cannot flag ANOTHER patient's record (RLS → NOT_FOUND_OR_DENIED) | PASS |
+| 4 | Receptionist can flag any patient (patients_update_staff) | PASS |
+| 5 | senior_discount_percent default 20, updates to 25 and back via Settings path | PASS |
+| 6 | Confirm stores payment_amount=400 + discount_amount=100 (20% of 500) | PASS |
+| 7 | Walk-in one-call create stores amount=350 + discount=150 | PASS |
+| 8 | Attendance pay-after stores discount with payment | PASS |
+| 9 | Negative discount rejected client-side (VALIDATION_ERROR) | PASS |
+| 10 | Collections discountsGranted sums range correctly (350 across 3 appts) | PASS |
+Follow-up round: tsc + lint clean after the row toggle (lint initially
+flagged an optimistic-mirror effect as `react-hooks/set-state-in-effect`;
+rewrote to render the row's own flag — the refetch is the state). Screenshot
+harness re-run 26/26.
+
+Pre-commit round (human request): all UI-visible em dashes (—) replaced with
+plain hyphens across 13 occurrences in 6 files (patient fee line, attendance
+dialog copy, discount notes, reports footnote, settings copy, walk-in labels
+and payment options). Code comments keep their dashes; SMS strings were
+already ASCII-safe. tsc + lint + screenshots 26/26 re-verified.
+
+| 11 | appointments→patients join exposes is_senior_pwd for badges | PASS |
+| 12 | Patient self-insert with discount_amount refused by re-pinned policy | PASS |
+
+tsc + lint + build clean. Visual checks (badge look, dialog note, Settings
+field) are the human's.
+
+### Known issues / follow-ups
+- The DB currently holds the senior harness's fixture rows (3 appointments
+  with discounts, patients "Senior A"/"Senior B") PLUS the earlier fee
+  fixture rows; Collections shows combined demo numbers. `resetTestState()`
+  sweeps both if a from-empty demo is wanted.
+- Discount display on SMS/My Appointments required no schema beyond
+  `discount_amount`; if the desk ever wants "original fee" printed rather
+  than derived, a `base_fee` column would be needed (not built — the
+  consultation_fee setting serves as the base for now).
+- The pending-queue "Sent …" timestamp remains the only ordering; no
+  pinning, per the human's explicit choice.
+
 ---
 
 ## Phase 1 — Scaffold & schema
