@@ -25,7 +25,7 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 |---|--------|---------|--------|-------|
 | 1 | feat/fee-collections | Fee amount logging + collections report | Closed | 9/9 harness, P3/P4/P5/P7/P8 regressions pass; policy leak + Semaphore response-shape bug found & fixed; merged to main |
 | 2 | feat/senior-pwd-priority | Senior/PWD priority lane + configurable discount | Closed | Human ordered commit 2026-09-18; merged to main (`efd3608`), branch deleted. 12/12 harness, P3/P4/P7/P8 + fee regressions pass, tsc/lint/build clean, screenshots 26/26; row toggle added as follow-up; UI em dashes replaced with hyphens pre-commit |
-| 3 | feat/reports-charts | Charts & visual reports | Not started | Collections card feeds in |
+| 3 | feat/reports-charts | Charts & visual reports | Built — awaiting test | Scope narrowed by human: collections per-day area + peak-hours bars only; print CSS added; methodology prose stripped from cards per human feedback. Recharts 3.10 via shadcn chart wrapper (card.tsx overwrite reverted). tsc/lint/build clean, screenshots 26/26, fee/senior/P3/P8 suites pass on fresh reset |
 | 4 | feat/ux-flow-polish | User-flow audit & polish (all surfaces) | Not started | |
 | 5 | feat/arch-cleanup | Architecture cleanup (god pages, raw queries, utils) | Not started | Last; extract-on-touch during 1–4 shrinks it |
 

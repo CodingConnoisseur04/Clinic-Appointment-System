@@ -6,6 +6,100 @@ This is the source of truth when it diverges from the spec in /specs/.
 
 ---
 
+## Upgrade Feature 3 — Reports charts & visual upgrade
+**Date built:** 2026-09-18
+**Branch:** `feat/reports-charts` (not committed — awaiting human test)
+**Spec source:** docs/UPGRADE_ROADMAP.md § Feature 3; scope narrowed in
+conversation (no phase spec file exists for upgrade-track features)
+
+### What was built
+**Charts** (Recharts 3.10 via the shadcn chart wrapper, human-confirmed):
+- **Collections card** keeps its big number, method split bar, and stat grid
+  (Collections stays first and most prominent, per roadmap) and gains a
+  **per-day area chart** ("Collected per day") in gold. Data comes from a
+  new `perDay` field on `CollectionSummary` — date-ordered totals with NO
+  gap-filling: a day with no logged fees is absent, so the chart never
+  invents a zero for a day the desk simply did not log money.
+- **New "When do we get busy?" card**: **bar chart** of bookings per time
+  slot from a new `getPeakHours` lib (appointment_time buckets, range-dated,
+  CANCELLED excluded — a cancellation freed the slot; counting it would
+  invent demand). The big stat figure is the busiest slot time (12h format,
+  `.figure` discipline on all numerals).
+
+Both charts: Warm Confidence palette only (gold = money, primary = volume),
+recharts grid/axis styled via the shadcn container classes, tooltips use
+`formatPeso` / `formatTime12h` / `formatDateLong`, animations OFF
+(`isAnimationActive={false}`) so screenshots and prints capture reliably.
+
+**Print handout** (human requested): a `@media print` block in globals.css —
+sidebar, sticky pickers, buttons and status banners drop; cards keep borders
+but lose shadows; `break-inside: avoid` keeps a card on one sheet;
+`print-color-adjust: exact` preserves the gold/primary marks and chart
+fills; animations are pinned off. Printing /reports yields a clean panel
+handout.
+
+**Dependencies:** `recharts@^3.8` installed (React 19-compatible; the
+react-is concern is a 2.x-era issue, resolved in 3.x). `npx shadcn add
+chart` created `src/components/ui/chart.tsx` and ALSO OVERWROTE the design
+system's customized `card.tsx` with the stock version — reverted card.tsx
+immediately (git checkout); chart.tsx kept with one fix (its generated
+`import { cn } from "cn"` corrected to `@/lib/utils`).
+
+### Deviations from spec
+The roadmap floated charts for source mix, status donut, and a cancellation-
+rate line. In planning the human selected ONLY the collections per-day line
+and peak-hours bars; cancellation stays as the existing proportion-bar
+treatment; source mix and donut were dropped (the existing ProportionBar
+remains for both). CSV: peak-hours was evaluated and NOT exported — it is a
+per-slot aggregate, not a per-appointment field; the existing per-row CSV
+already allows pivoting by Time column. No other deviations.
+
+### Verification
+- tsc, eslint clean; `next build` clean.
+- Screenshot harness 26/26.
+- Harnesses: fee 9/9, senior 12/12, P3 12/12, P8 4/4 (on a fresh reset).
+- **Note:** running the fee suite immediately before P8 WITHOUT a reset in
+  between makes P8 Tests 1-2 fail on inflated counts (fixture-window
+  contamination; the fee harness's rows share the P8 window). Confirmed
+  clean after `db reset` + reseed; both suites pass in isolation. Not a
+  code regression; recorded here so future runs are not misread.
+
+### Test cases
+| # | Probe | Result |
+|---|-------|--------|
+| 1 | Collections perDay totals match the range sum, date-ordered | PASS |
+| 2 | Peak-hours buckets by HH:MM, CANCELLED excluded, peak slot identified | PASS (P8 scope-correctness + manual dev-server check; dedicated harness not built for the aggregate — see known issues) |
+| 3 | Charts render on /reports at 375px and desktop (screenshot harness) | PASS |
+| 4 | Print stylesheet: chrome hidden, charts/cards survive with color | PASS (code review + print-preview manual check is the human's) |
+| 5 | tsc / lint / build | PASS |
+
+### Known issues / follow-ups
+- **"Did the texts go out?" card removed from /reports (human request,
+  same session):** the SMS delivery card is gone — the SMS failure story is
+  already visible where the desk acts on it (per-appointment failed banners
+  + sms_logs), so the aggregate card was redundant. `getSmsReport` stays in
+  the lib (harmless, may return for an ops surface); the page no longer
+  calls it. tsc + lint + screenshots 26/26 re-verified.
+- **Methodology prose removed from /reports (human request, same session):**
+  the explanatory paragraphs under each card (money-counted-by-date note,
+  "never marked" explanation, SMS-retry note, peak-hours cancellation note,
+  discounts parenthetical) read as redundant to the clinic. Removed; the
+  stat-figure side lines were trimmed to bare data ("across N paid
+  appointments", "busiest slot · N appointments", "N of M texts
+  delivered"). The reasoning lives on in lib comments where it belongs.
+  tsc + lint + screenshots 26/26 re-verified.
+- No dedicated peak-hours harness yet: the aggregate is small and covered
+  indirectly (P8 scope tests, manual render). If the human wants the same
+  rigor as the fee/feature-2 suites, a few asserts can be added to a future
+  P8 extension.
+- The recharts bundle is client-side only; /reports first load is heavier.
+  Acceptable at this scale (single receptionist console).
+- `npx shadcn add <anything>` will again overwrite customized components
+  (it did card.tsx this time) — check `git diff` immediately after any
+  future shadcn add and revert non-generated files.
+
+---
+
 ## Upgrade Feature 2 — Senior/PWD priority support
 **Date built:** 2026-09-18
 **Branch:** `feat/senior-pwd-priority` (not committed — awaiting human test)
