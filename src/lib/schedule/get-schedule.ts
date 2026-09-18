@@ -6,7 +6,7 @@ export type ScheduleEntry = {
   appointment_date: string;
   appointment_time: string;
   reason: string | null;
-  patients: { full_name: string; phone: string } | null;
+  patients: { full_name: string; phone: string; is_senior_pwd: boolean | null } | null;
 };
 
 const rangeSchema = z.object({
@@ -29,7 +29,7 @@ export async function getSchedule(
   const { data, error } = await supabase
     .from("appointments")
     .select(
-      "id, appointment_date, appointment_time, reason, patients(full_name, phone)"
+      "id, appointment_date, appointment_time, reason, patients(full_name, phone, is_senior_pwd)"
     )
     .gte("appointment_date", range.from)
     .lte("appointment_date", range.to)

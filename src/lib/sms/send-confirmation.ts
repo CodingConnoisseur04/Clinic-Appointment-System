@@ -33,7 +33,7 @@ export async function sendConfirmationSms(
       const { data: appt, error: apptErr } = await supabase
         .from("appointments")
         .select(
-          "appointment_date, appointment_time, payment_amount, patients(phone)"
+          "appointment_date, appointment_time, payment_amount, discount_amount, patients(phone, is_senior_pwd)"
         )
         .eq("id", appointmentId)
         .single();
@@ -51,13 +51,32 @@ export async function sendConfirmationSms(
       // the GSM-7 charset — it forces UCS-2, tripling the message to 3
       // segments/credits (and it garbles on some handsets). "PHP 500" sends
       // as one segment.
+      const patient = appt.patients as unknown as
+        | { phone: string; is_senior_pwd: boolean | null }
+        | null;
+      const seniorPct =
+        patient?.is_senior_pwd === true
+          ? Number((await getClinicSettings(supabase)).senior_discount_percent ?? "") || 0
+          : 0;
+
       let feeLine = "";
       if (appt.payment_amount !== null && appt.payment_amount !== undefined) {
-        feeLine = ` PHP ${Number(appt.payment_amount).toLocaleString("en-PH", { maximumFractionDigits: 2 })} fee received -`;
+        const amount = Number(appt.payment_amount).toLocaleString("en-PH", { maximumFractionDigits: 2 });
+        // When a discount was given, say so: the patient should not have to
+        // guess why the number is lower than the usual fee.
+        feeLine = seniorPct > 0
+          ? ` PHP ${amount} (after ${seniorPct}% senior/PWD discount) fee received -`
+          : ` PHP ${amount} fee received -`;
       } else {
         const settings = await getClinicSettings(supabase);
         if (settings.consultation_fee) {
-          feeLine = ` Consultation fee: PHP ${Number(settings.consultation_fee).toLocaleString("en-PH", { maximumFractionDigits: 2 })} (pay at the clinic).`;
+          const fee = Number(settings.consultation_fee).toLocaleString("en-PH", { maximumFractionDigits: 2 });
+          // No fee logged yet: quote the NORMAL fee, plus the discount notice
+          // when the patient is flagged — the desk applies it when payment is
+          // arranged, so the patient knows to expect less than this figure.
+          feeLine = seniorPct > 0
+            ? ` Consultation fee: PHP ${fee} - ${seniorPct}% senior/PWD discount applies (pay at the clinic).`
+            : ` Consultation fee: PHP ${fee} (pay at the clinic).`;
         }
       }
 

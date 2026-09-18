@@ -193,9 +193,18 @@ export default function ReportsPage() {
                       </div>
                     ))}
                   </dl>
+                  <div className="flex items-baseline justify-between gap-3 border-t border-border pt-4">
+                    <p className="text-xs text-pretty text-muted-foreground">
+                      Senior/PWD discounts granted in this range (what the desk
+                      recorded off the normal fee).
+                    </p>
+                    <p className="figure shrink-0 text-sm font-medium">
+                      {formatPeso(collections.discountsGranted)}
+                    </p>
+                  </div>
                   <p className="border-t border-border pt-4 text-xs text-pretty text-muted-foreground">
-                    Money is counted on the day the appointment was dated — the
-                    day the fee was taken — not the day the record was created.
+                    Money is counted on the day the appointment was dated - the
+                    day the fee was taken - not the day the record was created.
                     “Prepaid no-shows” is money collected for visits that did
                     not happen; it stays in the total, never quietly dropped.
                   </p>

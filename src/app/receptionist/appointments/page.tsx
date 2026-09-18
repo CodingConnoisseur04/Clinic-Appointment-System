@@ -30,6 +30,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppointments, type AppointmentRow } from "@/hooks/use-appointments";
 import { getClinicSettings } from "@/lib/clinic-settings";
+import { applyDiscountPct } from "@/lib/booking/discount";
+import { SeniorPwdToggle } from "@/components/console/senior-pwd-mark";
 import {
   dayGroupHeading,
   formatDateLong,
@@ -66,12 +68,16 @@ export default function AppointmentsPage() {
   const [attAmount, setAttAmount] = useState("");
   const [attRef, setAttRef] = useState("");
   const [feeDefault, setFeeDefault] = useState("");
+  const [discountPct, setDiscountPct] = useState(0);
 
   // Fee setting prefills the pay-after amount in the attendance dialog.
   useEffect(() => {
     let cancelled = false;
     getClinicSettings(supabase).then((s) => {
-      if (!cancelled) setFeeDefault(s.consultation_fee ?? "");
+      if (!cancelled) {
+        setFeeDefault(s.consultation_fee ?? "");
+        setDiscountPct(Number(s.senior_discount_percent) || 0);
+      }
     });
     return () => {
       cancelled = true;
@@ -258,6 +264,13 @@ export default function AppointmentsPage() {
                             <span className="text-sm font-medium">
                               {row.patients?.full_name ?? "Unknown patient"}
                             </span>
+                            {/* Flag editable right here: flips the patient's
+                                record, badge follows. */}
+                            <SeniorPwdToggle
+                              patientId={row.patients?.id}
+                              flagged={row.patients?.is_senior_pwd === true}
+                              onChanged={refresh}
+                            />
                             <SourceTag source={row.source} />
                           </div>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -308,7 +321,11 @@ export default function AppointmentsPage() {
                                     setAttAmount(
                                       row.payment_amount !== null
                                         ? String(row.payment_amount)
-                                        : feeDefault
+                                        // Flagged patient with no fee yet:
+                                        // prefill the discounted amount.
+                                        : row.patients?.is_senior_pwd === true
+                                          ? String(applyDiscountPct(Number(feeDefault), discountPct))
+                                          : feeDefault
                                     );
                                     setAttRef(row.payment_reference ?? "");
                                     setAttendanceTarget({ row, mark: "ATTENDED" });
@@ -515,8 +532,8 @@ export default function AppointmentsPage() {
             <div className="flex flex-col gap-3">
               <p className="text-xs text-muted-foreground">
                 {attendanceTarget.row.payment_amount !== null
-                  ? `Fee already logged: ${formatPeso(Number(attendanceTarget.row.payment_amount))} — adjust below only if the visit was charged differently.`
-                  : "No fee logged yet — if payment was taken at confirmation, the amount is on the record; log it here if it was taken now."}
+                  ? `Fee already logged: ${formatPeso(Number(attendanceTarget.row.payment_amount))} - adjust below only if the visit was charged differently.`
+                  : "No fee logged yet - if payment was taken at confirmation, the amount is on the record; log it here if it was taken now."}
               </p>
               <div className="flex flex-col gap-1.5">
                 <Label>Payment method</Label>
@@ -584,6 +601,12 @@ export default function AppointmentsPage() {
                               method: attMethod,
                               reference: attRef || undefined,
                               amount,
+                              // Gap actually given at pay-after time, from
+                              // the entered amount so overrides stay honest.
+                              discountAmount:
+                                amount !== undefined && Number(feeDefault) > amount
+                                  ? Number(feeDefault) - amount
+                                  : undefined,
                             },
                           }
                         : {}),

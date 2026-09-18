@@ -14,8 +14,9 @@ export type AppointmentRow = {
   payment_method: "cash" | "gcash" | null;
   payment_reference: string | null;
   payment_amount: number | null;
+  discount_amount: number | null;
   created_at: string;
-  patients: { full_name: string; phone: string } | null;
+  patients: { id: string; full_name: string; phone: string; is_senior_pwd: boolean | null } | null;
 };
 
 export function useAppointments() {
@@ -27,7 +28,7 @@ export function useAppointments() {
     const { data } = await supabase
       .from("appointments")
       .select(
-        "id, appointment_date, appointment_time, status, source, reason, attendance, payment_method, payment_reference, payment_amount, created_at, patients(full_name, phone)"
+        "id, appointment_date, appointment_time, status, source, reason, attendance, payment_method, payment_reference, payment_amount, discount_amount, created_at, patients(id, full_name, phone, is_senior_pwd)"
       )
       .order("appointment_date")
       .order("appointment_time");

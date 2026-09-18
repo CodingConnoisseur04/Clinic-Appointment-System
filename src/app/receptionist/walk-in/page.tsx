@@ -22,8 +22,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { useAppointments } from "@/hooks/use-appointments";
 import { PageMasthead } from "@/components/console/page-masthead";
+import { SeniorPwdMark } from "@/components/console/senior-pwd-mark";
 import { CLINIC } from "@/lib/brand";
 import { getClinicSettings } from "@/lib/clinic-settings";
+import { setPatientSeniorPwd } from "@/lib/patients/update-senior-flag";
+import { applyDiscountPct } from "@/lib/booking/discount";
+import { Switch } from "@/components/ui/switch";
 import { StepRail, type Step } from "@/components/console/step-rail";
 import { formatDateLong, formatTime12h, normalizePhMobile } from "@/lib/utils";
 import { BadgeCheck, Search } from "lucide-react";
@@ -40,6 +44,8 @@ export default function WalkInPage() {
   const [wiDob, setWiDob] = useState("");
   const [wiAddress, setWiAddress] = useState("");
   const [wiExisting, setWiExisting] = useState(false);
+  const [wiSenior, setWiSenior] = useState(false);
+  const [wiPatientId, setWiPatientId] = useState<string | null>(null);
   const [wiDate, setWiDate] = useState<Date | undefined>(undefined);
   const [wiSlot, setWiSlot] = useState<string | null>(null);
   const [wiReason, setWiReason] = useState("");
@@ -52,12 +58,15 @@ export default function WalkInPage() {
   // The consultation fee setting prefills the walk-in amount field; override
   // per visit as needed (discounts, procedures, waived). Prefills on first
   // load too, not only after a reset — the field must never just sit empty.
+  const [wiDiscountPct, setWiDiscountPct] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     getClinicSettings(supabase).then((s) => {
       if (cancelled) return;
       const fee = s.consultation_fee ?? "";
       setWiFeeDefault(fee);
+      setWiDiscountPct(Number(s.senior_discount_percent) || 0);
       setWiAmount((prev) => (prev === "" ? fee : prev));
     });
     return () => {
@@ -80,6 +89,8 @@ export default function WalkInPage() {
     setWiDob("");
     setWiAddress("");
     setWiExisting(false);
+    setWiSenior(false);
+    setWiPatientId(null);
     setWiDate(undefined);
     setWiSlot(null);
     setWiReason("");
@@ -100,7 +111,7 @@ export default function WalkInPage() {
     setWiPhone(canonical);
     const { data } = await supabase
       .from("patients")
-      .select("id, full_name, email, date_of_birth, address, profile_id")
+      .select("id, full_name, email, date_of_birth, address, profile_id, is_senior_pwd")
       .eq("phone", canonical)
       .limit(1)
       .maybeSingle();
@@ -110,6 +121,17 @@ export default function WalkInPage() {
       setWiEmail(data.email ?? "");
       setWiDob(data.date_of_birth ?? "");
       setWiAddress(data.address ?? "");
+      setWiSenior(data.is_senior_pwd === true);
+      setWiPatientId(data.id);
+      if (data.is_senior_pwd === true) {
+        // Flag came in with the record: re-prefill the fee with the discount
+        // so the desk does not have to remember to apply it by hand.
+        setWiAmount((prev) =>
+          prev === "" || prev === wiFeeDefault
+            ? String(applyDiscountPct(Number(wiFeeDefault), wiDiscountPct))
+            : prev
+        );
+      }
       toast.info("Existing patient record found, details loaded.");
     } else {
       setWiExisting(false);
@@ -117,7 +139,37 @@ export default function WalkInPage() {
       setWiEmail("");
       setWiDob("");
       setWiAddress("");
+      setWiSenior(false);
+      setWiPatientId(null);
       toast.info("No existing record. A new one will be created.");
+    }
+  }
+
+  // Flipping the checkbox is a real record change for an existing patient
+  // (persisted immediately), and a plain form field for a new one (saved with
+  // the row the find-or-create API is about to make). Either way the fee
+  // prefill follows the flag.
+  async function onSeniorToggle(next: boolean) {
+    setWiSenior(next);
+    if (next) {
+      setWiAmount((prev) =>
+        prev === "" || prev === wiFeeDefault
+          ? String(applyDiscountPct(Number(wiFeeDefault), wiDiscountPct))
+          : prev
+      );
+    } else if (Number(wiAmount) === applyDiscountPct(Number(wiFeeDefault), wiDiscountPct)) {
+      // Toggled off with the discounted amount still untouched: restore the
+      // normal fee so the field never keeps a stale discount.
+      setWiAmount(wiFeeDefault);
+    }
+    if (wiExisting && wiPatientId) {
+      const result = await setPatientSeniorPwd(supabase, wiPatientId, next);
+      if (!result.success) {
+        toast.error(result.message);
+      } else {
+        toast.success(next ? "Patient marked Senior/PWD." : "Senior/PWD mark removed.");
+        await refresh();
+      }
     }
   }
 
@@ -156,6 +208,9 @@ export default function WalkInPage() {
         body: JSON.stringify({
           phone: wiPhone.trim(),
           fullName: wiFullName.trim(),
+          // New-record flag (existing records were already toggled directly
+          // in onSeniorToggle; the lib only applies this on CREATE).
+          isSeniorPwd: wiSenior,
           ...(wiEmail ? { email: wiEmail } : {}),
           ...(wiDob ? { dateOfBirth: wiDob } : {}),
           ...(wiAddress ? { address: wiAddress } : {}),
@@ -185,6 +240,12 @@ export default function WalkInPage() {
               paymentMethod: wiMethod,
               paymentReference: wiReference || undefined,
               paymentAmount: amount,
+              // The discount actually given: the gap between the normal fee
+              // and what was charged, stored only when the desk charged less.
+              discountAmount:
+                amount !== undefined && Number(wiFeeDefault) > amount
+                  ? Number(wiFeeDefault) - amount
+                  : undefined,
             }),
       };
       const result = await createAppointment(supabase, input);
@@ -239,7 +300,7 @@ export default function WalkInPage() {
     },
     {
       label: "Payment and confirm",
-      hint: "Payment optional — the fee can wait until the visit",
+      hint: "Payment optional - the fee can wait until the visit",
       state: timeDone ? "current" : "todo",
     },
   ];
@@ -312,6 +373,24 @@ export default function WalkInPage() {
                 onChange={(e) => setWiFullName(e.target.value)}
               />
             </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5">
+              <div className="flex flex-col">
+                <Label htmlFor="wi-senior" className="text-sm font-normal">
+                  Senior citizen / PWD
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Applies the discount prefill to the fee and shows the gold
+                  priority mark on the schedule.
+                </p>
+              </div>
+              {wiSenior && <SeniorPwdMark />}
+              <Switch
+                id="wi-senior"
+                checked={wiSenior}
+                onCheckedChange={(checked) => void onSeniorToggle(checked === true)}
+              />
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="wi-email">Email (optional)</Label>
               <Input
@@ -401,9 +480,9 @@ export default function WalkInPage() {
                   <SelectValue placeholder="Method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="unpaid">Not paid yet — collect after the visit</SelectItem>
-                  <SelectItem value="cash">Cash — paid now</SelectItem>
-                  <SelectItem value="gcash">GCash — paid now</SelectItem>
+                  <SelectItem value="unpaid">Not paid yet - collect after the visit</SelectItem>
+                  <SelectItem value="cash">Cash - paid now</SelectItem>
+                  <SelectItem value="gcash">GCash - paid now</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -425,6 +504,11 @@ export default function WalkInPage() {
               <p className="text-xs text-muted-foreground">
                 Prefilled from Settings; change it here if this visit differs.
               </p>
+              {wiSenior && wiDiscountPct > 0 && (
+                <p className="text-xs text-[var(--gold-ink)]">
+                  {wiDiscountPct}% senior/PWD discount applied - override if needed.
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="wi-ref">Payment reference</Label>

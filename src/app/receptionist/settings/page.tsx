@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const supabase = createClient();
   const [phone, setPhone] = useState("");
   const [fee, setFee] = useState("");
+  const [discount, setDiscount] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -29,6 +30,7 @@ export default function SettingsPage() {
       if (!cancelled) {
         setPhone(s.receptionist_phone);
         setFee(s.consultation_fee ?? "");
+        setDiscount(s.senior_discount_percent ?? "");
         setLoading(false);
       }
     });
@@ -54,12 +56,23 @@ export default function SettingsPage() {
         return;
       }
     }
+    const discountRaw = discount.trim();
+    if (discountRaw !== "") {
+      const discountNum = Number(discountRaw);
+      if (!Number.isFinite(discountNum) || !Number.isInteger(discountNum) || discountNum < 0 || discountNum > 100) {
+        toast.error("Senior/PWD discount must be a whole percent, 0 to 100.");
+        return;
+      }
+    }
     setSaving(true);
     const results = [
       await upsertClinicSetting(supabase, "receptionist_phone", phone.trim()),
       ...(feeRaw === ""
         ? []
-        : [await upsertClinicSetting(supabase, "consultation_fee", String(Number(feeRaw)))])
+        : [await upsertClinicSetting(supabase, "consultation_fee", String(Number(feeRaw)))]),
+      ...(discountRaw === ""
+        ? []
+        : [await upsertClinicSetting(supabase, "senior_discount_percent", String(Number(discountRaw)))])
     ];
     setSaving(false);
     if (results.every((r) => r.success)) {
@@ -138,8 +151,29 @@ export default function SettingsPage() {
               className="figure"
             />
             <p className="text-xs text-muted-foreground">
-              Prefilled into the fee field every time payment is logged — at
+              Prefilled into the fee field every time payment is logged - at
               confirm, walk-in, or attendance. Still editable per visit.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="senior-discount">Senior/PWD discount (%)</Label>
+            <Input
+              id="senior-discount"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              inputMode="numeric"
+              value={discount}
+              onChange={(e) => setDiscount(e.target.value)}
+              placeholder="e.g. 20"
+              className="figure"
+            />
+            <p className="text-xs text-muted-foreground">
+              Prefilled into the fee for patients marked Senior/PWD (RA 9994
+              mandate is 20%). It suggests an amount - you can always override
+              the fee per visit.
             </p>
           </div>
 

@@ -9,6 +9,10 @@ export type FindOrCreatePatientInput = {
   email?: string;
   dateOfBirth?: string;
   address?: string;
+  // Senior/PWD self-assertion (signup) or desk entry (walk-in). Only applied
+  // on CREATE — an existing record's flag is never overwritten here; the desk
+  // toggles that explicitly.
+  isSeniorPwd?: boolean;
 };
 
 const inputSchema = z.object({
@@ -100,6 +104,7 @@ export async function findOrCreatePatient(
       email: input.email ?? null,
       date_of_birth: input.dateOfBirth ?? null,
       address: input.address ?? null,
+      is_senior_pwd: input.isSeniorPwd === true,
     })
     .select("id")
     .single();

@@ -19,6 +19,7 @@ import {
 import { CLINIC } from "@/lib/brand";
 import { EmptyState } from "@/components/console/empty-state";
 import { LedgerHeading } from "@/components/console/ledger";
+import { SeniorPwdMark } from "@/components/console/senior-pwd-mark";
 import { Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -163,6 +164,9 @@ export default function SchedulePage() {
                       <div className="flex min-w-0 flex-col gap-1">
                         <span className="text-sm font-medium">
                           {row.patients?.full_name ?? "Unknown patient"}
+                          {row.patients?.is_senior_pwd === true && (
+                            <SeniorPwdMark className="ml-2 align-middle" />
+                          )}
                         </span>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           {row.patients?.phone && (

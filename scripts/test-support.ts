@@ -81,6 +81,10 @@ export const TEST_PHONES = [
   // test-fee-collections
   "+639191234001",
   "+639191234002",
+  // test-senior-priority
+  "+639197001001",
+  "+639197001002",
+  "+639197001003",
 ] as const;
 
 /**

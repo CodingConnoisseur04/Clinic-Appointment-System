@@ -10,6 +10,7 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 const signupSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -28,6 +29,7 @@ export default function SignupPage() {
     fullName: "",
     phone: "",
   });
+  const [seniorPwd, setSeniorPwd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -57,6 +59,10 @@ export default function SignupPage() {
           data: {
             full_name: parsed.data.fullName,
             phone: parsed.data.phone,
+            // Self-asserted, same trust level as the name — the desk verifies
+            // when money changes hands. Read by the patients-row creation
+            // path, never by role assignment (that is app_metadata only).
+            is_senior_pwd: seniorPwd,
           },
         },
       });
@@ -131,6 +137,23 @@ export default function SignupPage() {
             actually read. It is also how the front desk finds your existing
             record instead of making a second one.
           </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5">
+          <div className="flex flex-col">
+            <Label htmlFor="senior-pwd" className="text-sm font-normal">
+              Senior citizen or PWD
+            </Label>
+            <p className="text-xs text-pretty text-muted-foreground">
+              Optional. Flags your record for the priority lane and the senior
+              discount at the front desk.
+            </p>
+          </div>
+          <Switch
+            id="senior-pwd"
+            checked={seniorPwd}
+            onCheckedChange={(checked) => setSeniorPwd(checked === true)}
+          />
         </div>
 
         <div className="flex flex-col gap-1.5">

@@ -41,10 +41,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await findOrCreatePatient(
-    createAdminClient(),
-    body as FindOrCreatePatientInput
-  );
+  const result = await findOrCreatePatient(createAdminClient(), {
+    ...(body as FindOrCreatePatientInput),
+    // Senior/PWD is a self-assertable, non-privileged flag (the desk verifies
+    // it when money changes hands). Walk-in desk sends it explicitly; an
+    // online signup's own flag rides their user_metadata. Only applied on
+    // CREATE — an existing record's flag is never silently overwritten.
+    isSeniorPwd:
+      body.isSeniorPwd === true || user.user_metadata?.is_senior_pwd === true,
+  });
 
   if ("error" in result) {
     return Response.json({ error: result.error }, { status: 400 });
