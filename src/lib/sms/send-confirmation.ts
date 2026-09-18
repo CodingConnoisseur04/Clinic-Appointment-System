@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendSms, type SendSmsResult } from "@/lib/sms/send-sms";
 import { CLINIC } from "@/lib/brand";
+import { getClinicSettings } from "@/lib/clinic-settings";
 import { formatTime12h } from "@/lib/utils";
 
 export type SendConfirmationResult = {
@@ -32,7 +33,7 @@ export async function sendConfirmationSms(
       const { data: appt, error: apptErr } = await supabase
         .from("appointments")
         .select(
-          "appointment_date, appointment_time, patients(phone)"
+          "appointment_date, appointment_time, payment_amount, patients(phone)"
         )
         .eq("id", appointmentId)
         .single();
@@ -42,9 +43,27 @@ export async function sendConfirmationSms(
         (appt.patients as unknown as { phone: string } | null)?.phone ?? null;
       if (!phone) return { delivered: false, send: null };
 
+      // The fee line tells the remote patient exactly what to bring or send —
+      // honest about payment status, since the record knows the difference.
+      // No fee logged yet → quote the Settings default (the desk may log a
+      // different amount later, e.g. a senior discount — the SMS says so).
+      // SMS best practice: ASCII-safe peso amounts. The ₱ glyph is outside
+      // the GSM-7 charset — it forces UCS-2, tripling the message to 3
+      // segments/credits (and it garbles on some handsets). "PHP 500" sends
+      // as one segment.
+      let feeLine = "";
+      if (appt.payment_amount !== null && appt.payment_amount !== undefined) {
+        feeLine = ` PHP ${Number(appt.payment_amount).toLocaleString("en-PH", { maximumFractionDigits: 2 })} fee received -`;
+      } else {
+        const settings = await getClinicSettings(supabase);
+        if (settings.consultation_fee) {
+          feeLine = ` Consultation fee: PHP ${Number(settings.consultation_fee).toLocaleString("en-PH", { maximumFractionDigits: 2 })} (pay at the clinic).`;
+        }
+      }
+
       const result = await sendSms({
         number: phone,
-        message: `${CLINIC.name}: your appointment on ${appt.appointment_date} at ${formatTime12h(appt.appointment_time)} is CONFIRMED. See you then!`,
+        message: `${CLINIC.name}: your appointment on ${appt.appointment_date} at ${formatTime12h(appt.appointment_time)} is CONFIRMED.${feeLine} See you then!`,
       });
       return { delivered: result.success, send: result };
     } catch {

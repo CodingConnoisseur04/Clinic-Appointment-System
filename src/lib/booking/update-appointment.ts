@@ -46,8 +46,21 @@ async function updateOne(
 
 export async function confirmAppointment(
   supabase: SupabaseClient,
-  input: { appointmentId: string; paymentMethod: "cash" | "gcash"; paymentReference?: string }
+  input: {
+    appointmentId: string;
+    paymentMethod: "cash" | "gcash";
+    paymentReference?: string;
+    paymentAmount?: number | undefined;
+  }
 ): Promise<UpdateResult> {
+  if (input.paymentAmount !== undefined &&
+      (!Number.isFinite(input.paymentAmount) || input.paymentAmount < 0)) {
+    return {
+      success: false,
+      reason: "VALIDATION_ERROR",
+      message: "Fee cannot be negative",
+    };
+  }
   return updateOne(
     supabase,
     input.appointmentId,
@@ -55,6 +68,7 @@ export async function confirmAppointment(
       status: "CONFIRMED",
       payment_method: input.paymentMethod,
       payment_reference: input.paymentReference ?? null,
+      payment_amount: input.paymentAmount ?? null,
     },
     "PENDING"
   );
@@ -71,12 +85,42 @@ export async function rejectAppointment(
 
 export async function markAttendance(
   supabase: SupabaseClient,
-  input: { appointmentId: string; attendance: "ATTENDED" | "NO_SHOW" }
+  input: {
+    appointmentId: string;
+    attendance: "ATTENDED" | "NO_SHOW";
+    payment?: {
+      method: "cash" | "gcash";
+      reference?: string;
+      amount?: number | undefined;
+    };
+  }
 ): Promise<UpdateResult> {
+  if (input.payment?.amount !== undefined &&
+      (!Number.isFinite(input.payment.amount) || input.payment.amount < 0)) {
+    return {
+      success: false,
+      reason: "VALIDATION_ERROR",
+      message: "Fee cannot be negative",
+    };
+  }
   return updateOne(
     supabase,
     input.appointmentId,
-    { attendance: input.attendance },
+    {
+      attendance: input.attendance,
+      // Pay-after model: the fee is logged in the same motion as attendance.
+      // No-shows never carry a payment — a no-show payment is a contradiction,
+      // so any stray attempt to attach one is dropped, not stored.
+      ...(input.attendance === "NO_SHOW"
+        ? {}
+        : input.payment
+          ? {
+              payment_method: input.payment.method,
+              payment_reference: input.payment.reference ?? null,
+              payment_amount: input.payment.amount ?? null,
+            }
+          : {}),
+    },
     "CONFIRMED"
   );
 }

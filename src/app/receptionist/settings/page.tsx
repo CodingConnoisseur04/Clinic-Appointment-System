@@ -19,6 +19,7 @@ import { TriangleAlert } from "lucide-react";
 export default function SettingsPage() {
   const supabase = createClient();
   const [phone, setPhone] = useState("");
+  const [fee, setFee] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -27,6 +28,7 @@ export default function SettingsPage() {
     getClinicSettings(supabase).then((s) => {
       if (!cancelled) {
         setPhone(s.receptionist_phone);
+        setFee(s.consultation_fee ?? "");
         setLoading(false);
       }
     });
@@ -40,17 +42,30 @@ export default function SettingsPage() {
       toast.error("Phone number cannot be empty.");
       return;
     }
+    const feeRaw = fee.trim();
+    if (feeRaw !== "") {
+      const feeNum = Number(feeRaw);
+      if (!Number.isFinite(feeNum) || feeNum < 0 || !Number.isInteger(feeNum)) {
+        toast.error("Consultation fee must be a whole peso amount, zero or more.");
+        return;
+      }
+      if (feeNum > 1000000) {
+        toast.error("Consultation fee looks too large.");
+        return;
+      }
+    }
     setSaving(true);
-    const result = await upsertClinicSetting(
-      supabase,
-      "receptionist_phone",
-      phone.trim()
-    );
+    const results = [
+      await upsertClinicSetting(supabase, "receptionist_phone", phone.trim()),
+      ...(feeRaw === ""
+        ? []
+        : [await upsertClinicSetting(supabase, "consultation_fee", String(Number(feeRaw)))])
+    ];
     setSaving(false);
-    if (result.success) {
+    if (results.every((r) => r.success)) {
       toast.success("Settings saved.");
     } else {
-      toast.error(result.error ?? "Failed to save.");
+      toast.error(results.find((r) => !r.success)?.error ?? "Failed to save.");
     }
   }
 
@@ -108,6 +123,25 @@ export default function SettingsPage() {
               </p>
             </div>
           )}
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="consultation-fee">Consultation fee (₱)</Label>
+            <Input
+              id="consultation-fee"
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={fee}
+              onChange={(e) => setFee(e.target.value)}
+              placeholder="e.g. 500"
+              className="figure"
+            />
+            <p className="text-xs text-muted-foreground">
+              Prefilled into the fee field every time payment is logged — at
+              confirm, walk-in, or attendance. Still editable per visit.
+            </p>
+          </div>
 
           <Button onClick={handleSave} disabled={loading || saving} className="self-start">
             {saving ? "Saving…" : "Save settings"}

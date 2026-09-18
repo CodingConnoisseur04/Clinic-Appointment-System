@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppointments } from "@/hooks/use-appointments";
+import { getClinicSettings } from "@/lib/clinic-settings";
+import { createClient } from "@/lib/supabase/client";
 import {
   formatDateLong,
   formatDateShort,
@@ -45,9 +47,26 @@ type SmsOutcome = { delivered: boolean; name: string } | null;
 
 export default function PendingPage() {
   const { appointments, loading, refresh, supabase } = useAppointments();
+  const settingsClient = createClient();
   const [confirmTarget, setConfirmTarget] = useState<(typeof appointments)[0] | null>(null);
   const [confirmMethod, setConfirmMethod] = useState<"cash" | "gcash">("cash");
   const [confirmRef, setConfirmRef] = useState("");
+  const [confirmAmount, setConfirmAmount] = useState("");
+  const [feeDefault, setFeeDefault] = useState("");
+
+  // The consultation fee setting prefills the amount field; the receptionist
+  // can still override it per appointment (discounts, procedures, waived).
+  useEffect(() => {
+    let cancelled = false;
+    getClinicSettings(settingsClient).then((s) => {
+      if (cancelled) return;
+      const fee = s.consultation_fee ?? "";
+      setFeeDefault(fee);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [settingsClient]);
   const [rejectTarget, setRejectTarget] = useState<(typeof appointments)[0] | null>(null);
   const [smsOutcome, setSmsOutcome] = useState<SmsOutcome>(null);
 
@@ -188,6 +207,7 @@ export default function PendingPage() {
                     onClick={() => {
                       setConfirmMethod("cash");
                       setConfirmRef("");
+                      setConfirmAmount(feeDefault);
                       setConfirmTarget(row);
                     }}
                     className="h-9 flex-1 px-3.5 lg:flex-none"
@@ -242,6 +262,23 @@ export default function PendingPage() {
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirm-amount">Fee collected (₱)</Label>
+              <Input
+                id="confirm-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                className="figure"
+                value={confirmAmount}
+                onChange={(e) => setConfirmAmount(e.target.value)}
+                placeholder={feeDefault ? `e.g. ${feeDefault}` : "e.g. 500"}
+              />
+              <p className="text-xs text-muted-foreground">
+                Prefilled from Settings; change it here if this visit differs.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="confirm-ref">Payment reference</Label>
               <Input
                 id="confirm-ref"
@@ -261,6 +298,12 @@ export default function PendingPage() {
             <Button
               onClick={async () => {
                 if (!confirmTarget) return;
+                const amountRaw = confirmAmount.trim();
+                const amount = amountRaw === "" ? undefined : Number(amountRaw);
+                if (amount !== undefined && (!Number.isFinite(amount) || amount < 0)) {
+                  toast.error("Fee must be a number, zero or more.");
+                  return;
+                }
                 const target = confirmTarget;
                 setConfirmTarget(null);
                 const name = target.patients?.full_name ?? "the patient";
@@ -270,10 +313,12 @@ export default function PendingPage() {
                       appointmentId: target.id,
                       paymentMethod: confirmMethod,
                       paymentReference: confirmRef || undefined,
+                      paymentAmount: amount,
                     }),
                   "Request confirmed."
                 );
                 setConfirmRef("");
+                setConfirmAmount(feeDefault);
                 if (confirmed) {
                   // The confirm itself already succeeded; a transport error
                   // here must not surface as an unhandled rejection. The

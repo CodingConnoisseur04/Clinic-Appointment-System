@@ -23,6 +23,7 @@ import { SlotPicker, toDateInput } from "@/components/booking/slot-picker";
 import { useAppointments } from "@/hooks/use-appointments";
 import { PageMasthead } from "@/components/console/page-masthead";
 import { CLINIC } from "@/lib/brand";
+import { getClinicSettings } from "@/lib/clinic-settings";
 import { StepRail, type Step } from "@/components/console/step-rail";
 import { formatDateLong, formatTime12h, normalizePhMobile } from "@/lib/utils";
 import { BadgeCheck, Search } from "lucide-react";
@@ -42,9 +43,27 @@ export default function WalkInPage() {
   const [wiDate, setWiDate] = useState<Date | undefined>(undefined);
   const [wiSlot, setWiSlot] = useState<string | null>(null);
   const [wiReason, setWiReason] = useState("");
-  const [wiMethod, setWiMethod] = useState<"cash" | "gcash">("cash");
+  const [wiMethod, setWiMethod] = useState<"unpaid" | "cash" | "gcash">("unpaid");
   const [wiReference, setWiReference] = useState("");
+  const [wiAmount, setWiAmount] = useState("");
+  const [wiFeeDefault, setWiFeeDefault] = useState("");
   const [wiSubmitting, setWiSubmitting] = useState(false);
+
+  // The consultation fee setting prefills the walk-in amount field; override
+  // per visit as needed (discounts, procedures, waived). Prefills on first
+  // load too, not only after a reset — the field must never just sit empty.
+  useEffect(() => {
+    let cancelled = false;
+    getClinicSettings(supabase).then((s) => {
+      if (cancelled) return;
+      const fee = s.consultation_fee ?? "";
+      setWiFeeDefault(fee);
+      setWiAmount((prev) => (prev === "" ? fee : prev));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,8 +83,9 @@ export default function WalkInPage() {
     setWiDate(undefined);
     setWiSlot(null);
     setWiReason("");
-    setWiMethod("cash");
+    setWiMethod("unpaid");
     setWiReference("");
+    setWiAmount(wiFeeDefault);
   }
 
   async function lookupPhone() {
@@ -122,6 +142,12 @@ export default function WalkInPage() {
       toast.error("That email address does not look right.");
       return;
     }
+    const amountRaw = wiAmount.trim();
+    const amount = amountRaw === "" ? undefined : Number(amountRaw);
+    if (wiMethod !== "unpaid" && amount !== undefined && (!Number.isFinite(amount) || amount < 0)) {
+      toast.error("Fee must be a number, zero or more.");
+      return;
+    }
     setWiSubmitting(true);
     try {
       const res = await fetch("/api/patients/find-or-create", {
@@ -149,8 +175,17 @@ export default function WalkInPage() {
         source: "walk_in",
         status: "CONFIRMED",
         handledBy: myProfileId ?? undefined,
-        paymentMethod: wiMethod,
-        paymentReference: wiReference || undefined,
+        // "Not paid yet" is the realistic default for a cash walk-in: the
+        // patient is seen first and pays at the desk on the way out, so the
+        // fee is logged when marking the visit attended, not now. Choosing
+        // cash/GCash here records a genuinely prepaid walk-in.
+        ...(wiMethod === "unpaid"
+          ? {}
+          : {
+              paymentMethod: wiMethod,
+              paymentReference: wiReference || undefined,
+              paymentAmount: amount,
+            }),
       };
       const result = await createAppointment(supabase, input);
       if (result.success) {
@@ -204,7 +239,7 @@ export default function WalkInPage() {
     },
     {
       label: "Payment and confirm",
-      hint: "Confirms instantly, no request stage",
+      hint: "Payment optional — the fee can wait until the visit",
       state: timeDone ? "current" : "todo",
     },
   ];
@@ -357,19 +392,39 @@ export default function WalkInPage() {
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Payment method</Label>
+              <Label>Payment</Label>
               <Select
                 value={wiMethod}
-                onValueChange={(v) => setWiMethod(v as "cash" | "gcash")}
+                onValueChange={(v) => setWiMethod(v as "unpaid" | "cash" | "gcash")}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Method" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="gcash">GCash</SelectItem>
+                  <SelectItem value="unpaid">Not paid yet — collect after the visit</SelectItem>
+                  <SelectItem value="cash">Cash — paid now</SelectItem>
+                  <SelectItem value="gcash">GCash — paid now</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            {wiMethod !== "unpaid" && (
+              <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="wi-amount">Fee collected (₱)</Label>
+              <Input
+                id="wi-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                className="figure"
+                value={wiAmount}
+                onChange={(e) => setWiAmount(e.target.value)}
+                placeholder={wiFeeDefault ? `e.g. ${wiFeeDefault}` : "e.g. 500"}
+              />
+              <p className="text-xs text-muted-foreground">
+                Prefilled from Settings; change it here if this visit differs.
+              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="wi-ref">Payment reference</Label>
@@ -383,6 +438,8 @@ export default function WalkInPage() {
                 Optional, but this is the only record that payment was taken.
               </p>
             </div>
+              </>
+            )}
 
             <dl className="mt-1 flex flex-col gap-2 rounded-lg border border-border bg-muted/40 px-3 py-3 text-xs">
               <div className="flex items-baseline justify-between gap-3">

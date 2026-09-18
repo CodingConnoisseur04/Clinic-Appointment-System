@@ -1823,3 +1823,218 @@ all 17 routes; screenshot harness **26/26** (13 routes × desktop + mobile).
   the old window it left.
 
 ---
+## Fee collections — amount logging + collections report
+**Date:** 2026-09-18
+**Branch:** feat/fee-collections
+
+### What was built
+The system recorded payment_method and payment_reference but no amount, so
+"how much has the clinic collected?" was unanswerable. This adds the peso
+amount as a first-class, staff-only fact, and a Collections report card.
+
+- Migration `20260918000000_fee_collections.sql`:
+  - `appointments.payment_amount numeric(10,2)` + check `>= 0` (0 = waived,
+    a real clinic event that should still be loggable).
+  - **Security fix (found during this work):** the patient self-insert policy
+    only constrained source/status/patient_id — a patient could self-assert
+    payment_method/payment_reference, and now payment_amount too. Policy
+    recreated pinning all three payment fields to NULL on patient inserts
+    (patients have no UPDATE policy; this closes the only path). Covered by
+    harness Test 7 as a permanent regression check.
+  - `clinic_settings` seeded with `consultation_fee = '500'`.
+- `clinic-settings.ts`: `consultation_fee` setting (defaults "500").
+- Booking libs: `createAppointment` + `confirmAppointment` accept optional
+  `paymentAmount` (validated >= 0); `markAttendance` accepts optional
+  `payment {method, reference, amount}` for the pay-after model — never
+  attached on NO_SHOW (a no-show payment is a contradiction; the stray
+  amount is dropped, but a method already logged at confirm is preserved so
+  the prepaid trail stays intact for reporting).
+- UI — fee amount field (type=number, min=0, step=0.01, figure class),
+  prefilled from Settings, editable per appointment, on all three money
+  surfaces: confirm dialog (pending page), walk-in payment card, attendance
+  dialog (pay-after). Rows in All-appointments now print the peso amount
+  between method and reference.
+- Reports: new "How much was collected?" card (first position) — total,
+  cash vs GCash ProportionBar, average fee, paid visits, from-attended,
+  prepaid-no-shows. Money counted on appointment_date (the day the fee was
+  taken), not created_at. `formatPeso()` added to utils (en-PH locale).
+- CSV export gains a "Fee (PHP)" column.
+- Settings page: consultation fee field (whole pesos, validated).
+- Harness `scripts/test-fee-collections.ts` (9 tests; phones registered in
+  test-support.ts; self-sweeping via resetTestState, no db reset needed).
+
+### Deviations from spec
+None — no phase spec exists for this feature (ad-hoc, per the agreed
+planning approach). Design decisions made in conversation: "collections"
+framing (not "earnings"), amount optional + backward compatible, pay-after
+supported at attendance, fee default from settings with per-appointment
+override.
+
+### Test cases
+| # | Test | Result |
+|---|------|--------|
+| 1 | confirmAppointment stores amount | PASS |
+| 2 | Confirm without amount still works (backward compat) | PASS |
+| 3 | Negative amount rejected before insert | PASS |
+| 4 | Walk-in one-call creation with amount | PASS |
+| 5 | markAttendance pay-after logs fee | PASS |
+| 6 | No-show mark adds no amount, preserves confirm-time method | PASS |
+| 7 | Patient insert with payment fields rejected by policy (leak closed) | PASS |
+| 8 | Collections report totals correct (total/cash/gcash/attended/prepaid-no-show) | PASS |
+| 9 | consultation_fee setting round-trips | PASS |
+
+Regression: Phase 3 (12/12), Phase 4 (5/5), Phase 5 (5/5), Phase 8 (4/4 on
+its documented fresh reset) all pass. tsc clean, lint clean, `npm run build`
+all 17 routes.
+
+### Known issues / follow-ups
+- **`db reset` was run during verification** (Phase 8's harness is
+  reset-required); manual test data in the local DB is gone. Staff were
+  reseeded. Browser sessions are dead — sign in fresh.
+- `consultation_fee` was verified to "350" then restored to "500" by the
+  harness; the setting survives `db reset` via the migration seed.
+- Amounts are display-rounded only where formatted; totals use raw sums
+  (floats safe at this scale; numeric(10,2) at the DB edge).
+- Senior/PWD 20% discount auto-math is the NEXT feature's job (needs the
+  flag this feature's fee field will discount against).
+
+---
+## Fee collections — round 2 (human-test feedback, 2026-09-18)
+
+### What was built
+Three decisions from the human's test round, all implemented on the same
+branch:
+
+1. **Placeholder bug + prefill bug fixed.** The fee inputs' placeholder was
+   hardcoded "e.g. 500" regardless of Settings, and the walk-in amount field
+   did not prefill on first page load (only after a form reset). All three
+   fee inputs now show `e.g. <configured fee>`, and the walk-in field
+   prefills on mount.
+2. **Walk-in payment is now optional** ("Payment optional" flow, human
+   decision). The method select defaults to **"Not paid yet — collect after
+   the visit"**; choosing it books + confirms the walk-in with NO payment
+   record. Cash/GCash still available for genuinely prepaid walk-ins, and
+   their amount/reference/fee fields only appear when a paid method is
+   chosen. The realistic default matches real small-clinic behavior: the
+   cash walk-in is seen first and pays at the desk on the way out — the fee
+   is logged when marking the visit attended (pay-after path built earlier
+   in this feature). Paid-only SMS rule unchanged (human reaffirmed).
+3. **Confirmation SMS now carries the fee** (human decision, good-practice
+   call — a payment-demand SMS at submission was explicitly rejected):
+   - Fee logged: "…is CONFIRMED. ₱500 fee received — See you then!"
+   - No fee yet: "…is CONFIRMED. Consultation fee: ₱500 (pay at the clinic).
+     See you then!" (quotes the consultation_fee setting)
+   Copy is honest about payment status because the record knows the
+   difference. Acknowledgment SMS at submission: deliberately skipped (the
+   booking page already promises staff contact; saves ₱/request).
+
+### Deviations from spec
+None — continuation of the same ad-hoc feature; decisions recorded above.
+
+### Test cases
+| # | Test | Result |
+|---|------|--------|
+| P7 suite (SMS) incl. new fee-line copy in dry-run output | 8/8 PASS |
+| Fee harness re-run on fresh DB | 9/9 PASS |
+| tsc / lint / build | clean / clean / compiled |
+
+### Known issues / follow-ups
+- **`db reset` was run again** (Phase 7 harness is reset-required): manual
+  test data gone, staff reseeded, browser sessions dead — sign in fresh.
+- Reminder SMS does not carry the fee line (reminders fire for already-
+  confirmed appointments; adding it there is trivial if wanted).
+- To receive real SMS during testing: set `SEMAPHORE_DRY_RUN=false` in
+  .env.local and restart the dev server; flip back after. Reminds: SMS only
+  fires on confirm (online) or paid walk-in — a PENDING request or unpaid
+  walk-in is silent by design.
+
+---
+## Fee collections — round 3 (SMS false-failure bug, 2026-09-18)
+
+### What was found
+Human reported the confirm banner saying "confirmation SMS failed" — while
+Semaphore's dashboard showed the message SENT and the phone received it.
+
+Root cause (proven from sms_logs provider_response, captured verbatim):
+**Semaphore v4 returns a JSON ARRAY on success** —
+`[{ "message_id": 280509228, "recipient": "639197777001", "status": "Pending", "network": "Smart", ... }]`
+— but `send-sms.ts` expected a plain object `{ message_id }`. Every real,
+delivered send was therefore classified as a failure: false "failed"
+sms_logs rows, a lying red banner, and inflated "Confirmations failed"
+counts in the Reports SMS card. HTTP 200 + no message_id on the object =
+mislabeled failure.
+
+Secondary fix from the same investigation: in-band failures inside HTTP 200
+now log the FULL response body (the old fallback said only
+"Semaphore returned HTTP 200", which is undiagnosable).
+
+Also in this round: the confirmation SMS fee line switched from ₱ to
+ASCII-safe "PHP 500" (₱ is outside GSM-7 — forces UCS-2, triples the
+message to 3 credits, and garbles on some handsets). Earlier theory that
+the glyph caused this particular failure was wrong — the shape bug was —
+but the ASCII change stands as correct SMS practice (1 credit per message).
+
+### What was built
+- `send-sms.ts`: parser accepts both response shapes (array → first
+  element; object → as-is); in-band failures preserve the full body.
+- `scripts/probe-sms-response-shapes.ts`: zero-network regression probe
+  (injected fetch, no credits) covering array success, object error,
+  in-band HTTP 200 failure, and legacy object success. 4/4 PASS.
+
+### Test cases
+| # | Probe | Result |
+|---|-------|--------|
+| 1 | v4 array success shape parses as SUCCESS | PASS |
+| 2 | Object error shape parses as FAILURE with reason | PASS |
+| 3 | HTTP 200 in-band failure keeps full body in error | PASS |
+| 4 | Legacy object success shape still accepted | PASS |
+
+tsc clean.
+
+### Known issues / follow-ups
+- **Harness Test 6 sent one real reminder SMS** to a fixture number during
+  this round (dev server was running with DRY_RUN=false; the reminder cron
+  route ignores dry-run env the same way as before the fix). Real credit
+  spent, message delivered to a test number. Fixture numbers are fake
+  routes — harmless, but noted for honesty.
+- Historical sms_logs rows from before this fix may carry false "failed"
+  statuses (confirmations that actually delivered). The Reports SMS card
+  counts them as failed. Local-only data; no backfill needed for a demo.
+- `SEMAPHORE_DRY_RUN` is currently `false` in .env.local (human's real-
+  number testing). Flip back to `true` after testing to stop credit spend.
+- The Phase 7 suite's Test 6 asserts reminder delivery counts and was
+  affected by the misclassification; rerun on a fresh reset with
+  DRY_RUN=true to re-verify the whole SMS surface end to end.
+
+---
+## Fee display on patient My Appointments (2026-09-18, round 3 addendum)
+
+### What was built
+Confirmed appointments on the patient's My Appointments ledger now show the
+money line in all three states:
+- Fee logged: "₱500 paid by GCash · GC-12345" (amount + method + reference)
+- Method logged without amount (legacy rows): "Paid by cash" (unchanged)
+- Nothing logged yet: "Fee: ₱500 — pay at the clinic" (quotes the
+  consultation_fee setting; the remote patient finally sees what to bring
+  without waiting for the desk's call)
+
+Fee setting is read once per page load via getClinicSettings (public to
+authenticated users by the clinic_settings select policy). PENDING and
+CANCELLED rows stay silent about money — nothing is owed on an unconfirmed
+request, and a cancelled one owes nothing.
+
+### Test cases
+tsc clean, lint clean. Visual verification is the human's (login as a
+patient with a confirmed appointment).
+
+---
+## Demo-state reset + full SMS/fee verification (2026-09-18)
+
+- `SEMAPHORE_DRY_RUN` restored to `true` (real-number testing done).
+- `db reset` + staff reseed (clears all false-"failed" sms_logs rows from
+  before the parser fix — Reports SMS card counts are honest again).
+- Phase 7 suite 8/8 (Test 6 reminder now sent=1/failed=0 — parser fix
+  verified through the real route) + fee harness 9/9.
+- DB left with the fee harness's fixture rows (4 paid appointments,
+  mixed method/attendance) so the Collections card shows split numbers
+  in the demo; sweep with resetTestState if a from-empty demo is wanted.
