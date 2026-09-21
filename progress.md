@@ -3,17 +3,50 @@
 At-a-glance status. Update the table whenever a phase changes state.
 For details on what happened in a phase, see changelog.md.
 
+## Current state — handoff summary (2026-09-21)
+Written so a fresh session can orient without reading everything below.
+
+- **Where the project is:** all 10 planned phases are done or closed
+  (Phase 10 / deployment never started — no spec exists yet). Three
+  post-phase upgrade features are also merged: fee collections +
+  collections report (Feature 1), Senior/PWD flag + discount prefill
+  (Feature 2), report charts + print handout (Feature 3). An in-place
+  receptionist reschedule and two "Warm Confidence" design passes are also
+  closed and merged. Everything is on `main`; feature branches are deleted
+  after merge; working tree is clean as of this note.
+- **What is NOT built:** deployment/hosting (Phase 10), UX-flow polish
+  (upgrade 4), architecture cleanup (upgrade 5). SMS is Semaphore with
+  `SEMAPHORE_DRY_RUN=true` currently set in `.env.local`.
+- **Local DB state:** rebuilt from migrations + seed on 2026-09-18
+  (`db reset` during chart verification); staff reseeded; holds fixture
+  rows from the senior and fee harnesses so demo reports show data —
+  `resetTestState()` sweeps them if a from-empty demo is wanted.
+- **Standing gotchas:** every `supabase db reset` wipes auth users → re-run
+  `npx tsx scripts/seed-staff.ts`; phase harnesses are reset-required
+  (they fail on a used DB — documented per entry, not regressions);
+  `npx shadcn add` overwrites customized components (it clobbered
+  `card.tsx` once — check `git diff` right after); the doctor portrait and
+  all imagery are Pexels stand-ins (provenance in
+  `public/images/CREDITS.md`), portrait must be replaced before launch.
+- **Records audit 2026-09-21:** status corrections applied this day —
+  Phase 2 row corrected from "Built — awaiting test" to Closed (its
+  changelog entry was already dated closed 2026-08-24 and its commit
+  `bc0290b` is on main — the row was simply never updated); Phase 9 marked
+  Closed on the human's confirmation that testing was completed (retroactive,
+  exact date unrecorded); the reschedule note's "branch retained" corrected
+  (branch deleted after merge). No code changed in this audit.
+
 | Phase | Name | Status | Spec | Notes |
 |---|---|---|---|---|
 | 1 | Scaffold & schema | Closed | /specs/phase-1-project-scaffold-database-schema.md | All 9 test cases pass; committed |
-| 2 | Auth + role-based access | Built — awaiting test | /specs/phase-2-auth-role-based-access.md | All 13 spec tests pass; after `db reset` re-run `npx tsx scripts/seed-staff.ts` |
+| 2 | Auth + role-based access | Closed | /specs/phase-2-auth-role-based-access.md | All 13 spec tests pass; committed `bc0290b`. Row corrected to Closed 2026-09-21 — changelog had it closed 2026-08-24 but this row was never updated. After `db reset` re-run `npx tsx scripts/seed-staff.ts` |
 | 3 | Slot-conflict logic (app layer) | Closed | /specs/phase-3-slot-conflict-logic.md | All 12 tests pass; run seed-staff after `db reset`, dev server needed for Test 6 |
 | 4 | Receptionist flow | Closed | /specs/phase-4-receptionist-flow.md | Automated + manual tests pass; committed |
 | 5 | Patient booking flow | Closed | /specs/phase-5-patient-booking-flow.md | Automated + manual tests pass (incl. full-stack round-trip); committed |
 | 6 | Doctor schedule view | Closed | /specs/phase-6-doctor-schedule-availability.md | Automated + manual tests pass; committed |
 | 7 | Semaphore SMS | Closed | /specs/phase-7-semaphore-sms.md | Automated + manual tests pass (incl. real send); dual-session hardening committed |
 | 8 | Reports | Closed | /specs/phase-8-reports.md | Automated + manual tests pass; committed |
-| 9 | Landing, branding & logout | Built — awaiting test | /specs/phase-9-landing-branding-logout.md | Harness 3/3 + regressions clean; mobile fix pass done; manual tests 4-10 pending (human) |
+| 9 | Landing, branding & logout | Closed | /specs/phase-9-landing-branding-logout.md | Harness 3/3 + regressions clean; mobile fix pass done. Marked Closed 2026-09-21 on human's confirmation that testing (incl. manual tests) was completed — retroactive, exact test date unrecorded |
 | 10 | Remote deployment & production readiness | Not started | /specs/phase-10-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live. Row corrected from `phase-9-deployment.md` to match this file's own note below that deployment is Phase 10. |
 
 **Status values:** Not started → Planning (Claude Chat) → Plan mode (OpenCode) →
@@ -33,7 +66,7 @@ Building → Built — awaiting test → Closed (tested, changelog + commit done
 
 **Receptionist in-place reschedule: Closed — same-day browser test run by the
 agent 2026-09-12 (9/9), human ordered the commit and the merge to main
-(`8885451`, merged `c990668`; branch `feat/reschedule` retained).** Not a
+(`8885451`, merged `c990668`; branch `feat/reschedule` deleted after merge).** Not a
 phase and has no spec; see `changelog.md` → "Receptionist in-place
 reschedule". Closes the gap the human found testing: the desk could
 confirm/cancel/mark attendance but could not change an appointment's time.
@@ -90,7 +123,7 @@ the clearly-marked sample phone per the Phase 9 spec again, and
 `.impeccable/design.json` was regenerated to mirror the built world. See
 changelog deviations 1, 7 and 8.
 
-Phase 9 built — awaiting human test. Deployment is Phase 10 — spec must be named
+Phase 9 Closed (confirmed 2026-09-21, retroactive). Deployment is Phase 10 — spec must be named
 `phase-10-deployment.md`.
 
 **Environment note 2026-09-11:** Docker/Supabase data disk moved C: → D:

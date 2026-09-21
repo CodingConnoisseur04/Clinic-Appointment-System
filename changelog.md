@@ -6,9 +6,26 @@ This is the source of truth when it diverges from the spec in /specs/.
 
 ---
 
+## Records audit — 2026-09-21 (no code changes)
+Bookkeeping pass so this file and progress.md can be handed to a fresh
+session as-is. Corrections, all status-only:
+- Upgrade Features 2 & 3: headers still said "not committed — awaiting human
+  test" although both were committed, merged to main and closed on
+  2026-09-18 (progress rows already recorded this). Headers updated to match.
+- Phase 9: `**Date closed:**` was left empty at build time. The human
+  confirms testing was completed; Closed 2026-09-21, recorded retroactively
+  (exact test date not recorded).
+- progress.md: Phase 2 row was still "Built — awaiting test" although its
+  changelog entry is dated closed 2026-08-24 and the phase was committed
+  (bc0290b); corrected to Closed. The reschedule note's "branch
+  feat/reschedule retained" corrected — the branch no longer exists (only
+  main does).
+
+---
+
 ## Upgrade Feature 3 — Reports charts & visual upgrade
 **Date built:** 2026-09-18
-**Branch:** `feat/reports-charts` (not committed — awaiting human test)
+**Branch:** `feat/reports-charts` — committed and merged to main (`27f287b`, branch deleted); Closed 2026-09-18 (see progress.md)
 **Spec source:** docs/UPGRADE_ROADMAP.md § Feature 3; scope narrowed in
 conversation (no phase spec file exists for upgrade-track features)
 
@@ -73,7 +90,7 @@ already allows pivoting by Time column. No other deviations.
 | 4 | Print stylesheet: chrome hidden, charts/cards survive with color | PASS (code review + print-preview manual check is the human's) |
 | 5 | tsc / lint / build | PASS |
 
-### Known issues / follow-ups
+### Known issues / follow-ups
 - **"Did the texts go out?" card removed from /reports (human request,
   same session):** the SMS delivery card is gone — the SMS failure story is
   already visible where the desk acts on it (per-appointment failed banners
@@ -102,7 +119,7 @@ already allows pivoting by Time column. No other deviations.
 
 ## Upgrade Feature 2 — Senior/PWD priority support
 **Date built:** 2026-09-18
-**Branch:** `feat/senior-pwd-priority` (not committed — awaiting human test)
+**Branch:** `feat/senior-pwd-priority` — committed and merged to main (`efd3608`, branch deleted); Closed 2026-09-18 (see progress.md)
 **Spec source:** docs/UPGRADE_ROADMAP.md § Feature 2, decisions settled in
 conversation (no phase spec file exists for upgrade-track features)
 
@@ -937,7 +954,7 @@ start `npm run dev` → `npx tsx scripts/test-phase8.ts`.
 ---
 
 ## Phase 9 — Landing page, branding & logout
-**Date closed:**
+**Date closed:** 2026-09-21 (recorded retroactively — the human confirms testing was completed; exact test date not recorded)
 **Spec:** /specs/phase-9-landing-branding-logout.md
 
 ### What was built
@@ -1015,6 +1032,8 @@ Manual items still open for the human: Test 7 (real SMS showing clinic
 name), Test 10 (subjective critique rounds if desired), and a final eyeball
 of the landing page at 375px in a real phone browser.
 
+**RESOLVED (2026-09-21):** the human confirms all Phase 9 testing was completed; the phase is Closed (see the retroactive date note in the header).
+
 ### Known issues / follow-ups
 - Deployment spec must land as `specs/phase-10-deployment.md` (renumbered
   per this spec's header); progress.md Current focus already notes it.
@@ -1072,6 +1091,9 @@ None — ad-hoc improvement outside any phase spec.
 - `src/app/doctor/schedule/page.tsx` — removed redundant setLoading(true)
   inside effect.
 - `src/app/receptionist/pending/page.tsx` — removed unused imports.
+
+---
+
 ## Uncommitted patch — Receptionist UX improvements
 **Date:** 2026-08-28
 **Branch:** feat/receptionist-improvements
