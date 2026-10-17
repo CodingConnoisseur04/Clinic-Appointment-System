@@ -49,7 +49,7 @@ Hard constraints:
 
 ## Brand Commitments
 
-- Name: **Golden Friendship Family Clinic**, with Dr. Andrea Villaflor as the doctor, in Cagayan de Oro City. This ships today: `src/lib/brand.ts` is the single source, read by the landing page, every masthead, and SMS copy. The exact spelling is binding everywhere the product names itself.
+- Name: **Golden Friendship Family Clinic**, in Cagayan de Oro City. The physician is presented publicly under the generic label **Clinic Physician**, with no personal name shown. This ships today: `src/lib/brand.ts` is the single source, read by the landing page, every masthead, and SMS copy. The exact spelling is binding everywhere the product names itself.
 - Visual identity is committed in `DESIGN.md` (the Warm Confidence system): a deep forest field, a warm cream ground, and gold reserved for time, money, and the next thing that matters. DM Serif Display carries display type, Geist carries body text, and Geist Mono with tabular figures carries every time, date, count, phone number, and payment reference. There is no separate logo asset; the clinic name set in type is the mark.
 
 ## Evidence on Hand
