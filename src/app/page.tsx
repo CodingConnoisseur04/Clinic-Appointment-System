@@ -93,7 +93,9 @@ function formatHours(rows: AvailabilityRow[]): string[] {
 function todayLine(rows: AvailabilityRow[]): string {
   const active = rows.filter((r) => r.is_active);
   const byDay = new Map(active.map((r) => [r.day_of_week, r]));
-  const today = new Date().getDay();
+  // Clinic-local day (Philippine time, fixed UTC+8): hosted server runtimes
+  // run in UTC, where "today" is the previous day between 00:00 and 08:00 PHT.
+  const today = new Date(Date.now() + 8 * 60 * 60 * 1000).getUTCDay();
   const todayRow = byDay.get(today);
   if (todayRow) {
     return `Open today until ${formatTime(todayRow.end_time)} · Walk-ins welcome`;

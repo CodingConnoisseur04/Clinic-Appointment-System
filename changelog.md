@@ -6,6 +6,82 @@ This is the source of truth when it diverges from the spec in /specs/.
 
 ---
 
+## Deployment prep — Vercel + hosted Supabase (Phase 10, no spec)
+**Date:** 2026-10-31
+**Spec:** none — `/specs/phase-10-deployment.md` does not exist yet. This is
+not a Phase 10 build; it covers only the deployment enablement the human asked
+for directly. No phase status was advanced to "Built — awaiting test".
+**Branch:** `main`, uncommitted working tree (nothing committed, per AGENTS.md)
+
+### What was built
+- `vercel.json` — one cron entry, daily `0 1 * * *` UTC (= 09:00 PHT), calling
+  `/api/cron/send-reminders`. Vercel attaches `Authorization: Bearer
+  $CRON_SECRET` automatically when that env var exists, which is exactly what
+  the route already requires. The route's existing dedupe (skip appointments
+  with a `sent` reminder) keeps a late/duplicate run from double-texting.
+- **UTC timezone fix in the reminder cron**
+  (`src/app/api/cron/send-reminders/route.ts`). The route read stored
+  date+time with `new Date(y, mo, d, h, mi)`, i.e. the server's local zone.
+  That is PHT locally but UTC on Vercel, which shifts the instant 8 hours and
+  would have missed every afternoon appointment in the 24h window. Times are
+  now converted with an explicit fixed +8 offset (Asia/Manila has no DST),
+  and the date-range strings are derived the same way instead of from the
+  host's local clock.
+- **Same class of fix on the landing page** (`src/app/page.tsx`, `todayLine`):
+  the "Open today…" line used the server's day-of-week, which on a UTC host is
+  the previous day between 00:00 and 08:00 PHT. Now computed from a +8 shifted
+  instant.
+- `DEPLOYMENT.md` — runbook for hosted Supabase project creation, migration
+  push, the manual availability seed, staff account creation + role promotion,
+  auth URL/confirmation settings, GitHub remote, Vercel env matrix, cron
+  behavior, post-deploy smoke test, cost/plan warnings, troubleshooting.
+
+### Deviations from spec
+There is no spec to deviate from. Three deployment decisions were made
+in-line and are flagged for the human instead:
+1. **Hosted email confirmation must be turned OFF** (documented, not coded).
+   Hosted Supabase defaults it ON, but the app has no `/auth/confirm` handler
+   and `/signup` redirects straight to `/patient`, so with it ON every signup
+   fails. The alternative (build a confirmation handler + "check your email"
+   state) is a real feature and was not built.
+2. **Cron schedule chosen as daily 09:00 PHT.** Enough for the current ±12h
+   reminder window on the Hobby plan's once-a-day limit. Phase 10 may want a
+   different schedule.
+3. **Staff seeding stays local-only.** `scripts/seed-staff.ts` keeps refusing
+   non-local URLs; production staff are created in the dashboard and promoted
+   by SQL, documented in `DEPLOYMENT.md` §3. No script was weakened.
+
+### Verification
+- `npx tsc --noEmit`: clean. `npm run lint`: clean. `npm run build`: clean
+  (20 routes compiled, TypeScript passed).
+- Not verified: anything on hosted Supabase/Vercel (no accounts or projects
+  exist yet). The cron and landing fixes are verified only by build/typecheck
+  and code review, not against a UTC runtime.
+
+### Known issues / open decisions
+- No hosted project, GitHub remote, or Vercel project exists at time of
+  writing; §6/§7 of `DEPLOYMENT.md` are the human's to execute.
+- `supabase db push` does not run `supabase/seed.sql`; weekly hours must be
+  inserted once manually (documented).
+- Live SMS (`SEMAPHORE_DRY_RUN=false`) needs an approved sender name and a
+  spend decision before reminders/confirmations cost money.
+- Pexels portrait is still a marked stand-in and must be replaced before launch.
+- Supabase free tier pauses after ~7 days idle; Vercel Hobby is non-commercial
+  use only — a real clinic deployment should be on Pro plans.
+
+### Files touched
+- `vercel.json` (new)
+- `DEPLOYMENT.md` (new)
+- `src/app/api/cron/send-reminders/route.ts`
+- `src/app/page.tsx`
+- `changelog.md`, `progress.md`
+
+### Test cases
+No spec, so no test-case table exists for this work. Checks run are listed
+under Verification.
+
+---
+
 ## Records audit — 2026-09-21 (no code changes)
 Bookkeeping pass so this file and progress.md can be handed to a fresh
 session as-is. Corrections, all status-only:

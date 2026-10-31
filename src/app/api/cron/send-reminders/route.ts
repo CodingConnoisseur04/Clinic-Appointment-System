@@ -16,11 +16,24 @@ function reminderWindow(): { startMs: number; endMs: number } {
   return { startMs: target - 12 * 60 * 60 * 1000, endMs: target + 12 * 60 * 60 * 1000 };
 }
 
+// Stored dates/times are the CLINIC's wall clock (Asia/Manila, a fixed UTC+8
+// with no DST). Hosted serverless runtimes run in UTC, so the offset is applied
+// explicitly instead of relying on the host's local zone — otherwise the
+// reminder window shifts 8 hours and afternoon appointments get skipped.
+const CLINIC_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
+
 function appointmentMs(date: string, time: string): number {
   const [y, mo, d] = date.split("-").map(Number);
   const [h, mi] = time.split(":").map(Number);
-  // Local server time is the clinic's frame of reference.
-  return new Date(y, mo - 1, d, h, mi).getTime();
+  return Date.UTC(y, mo - 1, d, h, mi) - CLINIC_UTC_OFFSET_MS;
+}
+
+// Format an instant as a clinic-local YYYY-MM-DD (server-zone independent).
+function clinicDateString(ms: number): string {
+  const d = new Date(ms + CLINIC_UTC_OFFSET_MS);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(
+    d.getUTCDate()
+  ).padStart(2, "0")}`;
 }
 
 export async function GET(request: Request) {
@@ -39,12 +52,8 @@ export async function GET(request: Request) {
   // then filter precisely on date+time in JS.
   const window = reminderWindow();
   const dayMs = 24 * 60 * 60 * 1000;
-  const fromDate = new Date(window.startMs - dayMs);
-  const toDate = new Date(window.endMs + dayMs);
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}`;
+  const fromDate = clinicDateString(window.startMs - dayMs);
+  const toDate = clinicDateString(window.endMs + dayMs);
 
   const { data: appts, error } = await supabase
     .from("appointments")
@@ -52,8 +61,8 @@ export async function GET(request: Request) {
       "id, appointment_date, appointment_time, patients(phone), sms_logs(type, status)"
     )
     .eq("status", "CONFIRMED")
-    .gte("appointment_date", fmt(fromDate))
-    .lte("appointment_date", fmt(toDate));
+    .gte("appointment_date", fromDate)
+    .lte("appointment_date", toDate);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });

@@ -14,7 +14,7 @@ Written so a fresh session can orient without reading everything below.
   receptionist reschedule and two "Warm Confidence" design passes are also
   closed and merged. Everything is on `main`; feature branches are deleted
   after merge; working tree is clean as of this note.
-- **What is NOT built:** deployment/hosting (Phase 10), UX-flow polish
+- **What is NOT built:** deployment/hosting (Phase 10 — prep done 2026-10-31: `vercel.json` cron, UTC timezone fixes, `DEPLOYMENT.md` runbook; no hosted Supabase/GitHub/Vercel project exists yet, so nothing is deployed), UX-flow polish
   (upgrade 4), architecture cleanup (upgrade 5). SMS is Semaphore with
   `SEMAPHORE_DRY_RUN=true` currently set in `.env.local`.
 - **Local DB state:** rebuilt from migrations + seed on 2026-09-18
@@ -47,7 +47,7 @@ Written so a fresh session can orient without reading everything below.
 | 7 | Semaphore SMS | Closed | /specs/phase-7-semaphore-sms.md | Automated + manual tests pass (incl. real send); dual-session hardening committed |
 | 8 | Reports | Closed | /specs/phase-8-reports.md | Automated + manual tests pass; committed |
 | 9 | Landing, branding & logout | Closed | /specs/phase-9-landing-branding-logout.md | Harness 3/3 + regressions clean; mobile fix pass done. Marked Closed 2026-09-21 on human's confirmation that testing (incl. manual tests) was completed — retroactive, exact test date unrecorded |
-| 10 | Remote deployment & production readiness | Not started | /specs/phase-10-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live. Row corrected from `phase-9-deployment.md` to match this file's own note below that deployment is Phase 10. |
+| 10 | Remote deployment & production readiness | Building — deployment prep (no spec yet) | /specs/phase-10-deployment.md | Guard local-only scripts, decide email confirmation policy, hosting platform, redirect URLs, SMS cost/testing plan before going live. Row corrected from `phase-9-deployment.md` to match this file's own note below that deployment is Phase 10. |
 
 **Status values:** Not started → Planning (Claude Chat) → Plan mode (OpenCode) →
 Building → Built — awaiting test → Closed (tested, changelog + commit done)
